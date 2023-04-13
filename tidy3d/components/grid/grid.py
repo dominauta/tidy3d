@@ -420,7 +420,7 @@ class Grid(Tidy3dBaseModel):
         extend_2d_normal : bool = False
             If ``True``, and the box is size zero along a single dimension, ensure that the returned
             indexes extend sufficiently along that dimension to be able to interpolate to the
-            box center from data that lives on grid cell centers.
+            box center from data that lives on grid cell boundaries.
 
         Returns
         -------
@@ -457,23 +457,20 @@ class Grid(Tidy3dBaseModel):
             extend_normal = extend_2d_normal and axis == normal_axis
             if ind_max > ind_min:
                 # Left side
-                if box.bounds[0][axis] < self.centers.to_list[axis][ind_min]:
+                if (box.bounds[0][axis] < self.centers.to_list[axis][ind_min] and extend) or extend_normal:
                     # Box bounds on the left side are to the left of the closest grid center
-                    if extend or extend_normal:
-                        # Need an extra pixel on the left for normal components and for flux
-                        # at the neighboring cell center on the left
-                        ind_min -= 1
+                    ind_min -= 1
 
                 # Right side
                 closest_center = self.centers.to_list[axis][ind_max - 1]
-                if extend:
+                if extend or extend_normal or (extend_2d_normal and box.bounds[1][axis] > closest_center):
                     # We always need an extra pixel on the right for the tangential components
                     ind_max += 1
-                if extend_normal and box.bounds[1][axis] > closest_center:
-                    # Box bounds on the right side are to the right of the closest grid center.
-                    # Requires extra pixel to be able to compute flux either at the closest
-                    # center if extend==False, or at the next center on the right if extend==True
-                    ind_max += 1
+                # if extend_normal and box.bounds[1][axis] > closest_center:
+                #     # Box bounds on the right side are to the right of the closest grid center.
+                #     # Requires extra pixel to be able to compute flux either at the closest
+                #     # center if extend==False, or at the next center on the right if extend==True
+                #     ind_max += 1
 
             # store indexes
             inds_list.append((ind_min, ind_max))
