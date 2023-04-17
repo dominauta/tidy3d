@@ -220,19 +220,19 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
             )
         dim1, dim2 = self._tangential_dims
 
-        # In-plane grid bounds inferred from the field data
-        if self.monitor.colocate:
-            # Should be equivalent to sim.discretize(self.monitor, extend=True)
-            # Take ``unique`` to handle 0D cases along a given dimension
-            plane_bounds1 = np.unique(self.grid_expanded.boundaries.to_dict[dim1])
-            plane_bounds2 = np.unique(self.grid_expanded.boundaries.to_dict[dim2])
-        else:
-            # Last pixel missing compared to sim.discretize(self.monitor, extend=True).
-            # This is because we cannot colocate the fields to the center of that pixel.
-            # However, the monitor should be completely outside of this last pixel.
-            fields = self.symmetry_expanded_copy.field_components
-            plane_bounds1 = np.array(fields["E" + dim2].coords[dim1])
-            plane_bounds2 = np.array(fields["E" + dim1].coords[dim2])
+        # # In-plane grid bounds inferred from the field data
+        # if self.monitor.colocate:
+        #     # Should be equivalent to sim.discretize(self.monitor, extend=True)
+        #     # Take ``unique`` to handle 0D cases along a given dimension
+        #     plane_bounds1 = np.unique(self.grid_expanded.boundaries.to_dict[dim1])
+        #     plane_bounds2 = np.unique(self.grid_expanded.boundaries.to_dict[dim2])
+        # else:
+        #     # Last pixel missing compared to sim.discretize(self.monitor, extend=True).
+        #     # This is because we cannot colocate the fields to the center of that pixel.
+        #     # However, the monitor should be completely outside of this last pixel.
+        fields = self.symmetry_expanded_copy.field_components
+        plane_bounds1 = fields["E" + dim2].coords[dim1].values
+        plane_bounds2 = fields["E" + dim1].coords[dim2].values
 
         return plane_bounds1, plane_bounds2
 
@@ -245,10 +245,9 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
     def _diff_area(self) -> xr.DataArray:
         """For a 2D monitor data, return the area of each cell in the plane, for use in numerical
         integrations."""
-        bounds = [bs.copy() for bs in self._plane_grid_boundaries]
-        print([len(bs) for bs in bounds])
+        # bounds = [bs.copy() for bs in self._plane_grid_boundaries]
+        # print(bounds)
         bounds = [bs.copy() for bs in self._plane_grid_centers]
-        print([len(bs) for bs in bounds])
 
         # Fix the grid boundaries to match the analytic monitor boundaries.
         _, plane_inds = self.monitor.pop_axis([0, 1, 2], self.monitor.size.index(0.0))
@@ -257,8 +256,6 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
 
         bounds[0] = np.array([mnt_bounds[0, 0]] + bounds[0].tolist() + [mnt_bounds[0, 1]])
         bounds[1] = np.array([mnt_bounds[1, 0]] + bounds[1].tolist() + [mnt_bounds[1, 1]])
-
-        print([len(bs) for bs in bounds])
 
         """Truncate bounds to monitor boundaries. This implicitly makes extra pixels which may be
         present have size 0 and so won't be included in the integration. For pixels intersected
@@ -272,6 +269,8 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
         bounds[0][np.argwhere(bounds[0] > mnt_bounds[0, 1])] = mnt_bounds[0, 1]
         bounds[1][np.argwhere(bounds[1] < mnt_bounds[1, 0])] = mnt_bounds[1, 0]
         bounds[1][np.argwhere(bounds[1] > mnt_bounds[1, 1])] = mnt_bounds[1, 1]
+        # print(np.diff(bounds[0]))
+        # print(np.diff(bounds[1]))
 
         sizes_dim0 = bounds[0][1:] - bounds[0][:-1] if bounds[0].size > 1 else [1.0]
         sizes_dim1 = bounds[1][1:] - bounds[1][:-1] if bounds[1].size > 1 else [1.0]
