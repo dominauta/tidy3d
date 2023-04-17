@@ -457,7 +457,7 @@ class Grid(Tidy3dBaseModel):
             extend_normal = extend_2d_normal and axis == normal_axis
             if ind_max > ind_min:
                 # Left side
-                if (box.bounds[0][axis] < self.centers.to_list[axis][ind_min] and extend) or extend_normal:
+                if (box.bounds[0][axis] < self.centers.to_list[axis][ind_min] and extend) or (extend and extend_normal):
                     # Box bounds on the left side are to the left of the closest grid center
                     ind_min -= 1
 

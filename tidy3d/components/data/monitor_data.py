@@ -246,11 +246,19 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
         """For a 2D monitor data, return the area of each cell in the plane, for use in numerical
         integrations."""
         bounds = [bs.copy() for bs in self._plane_grid_boundaries]
+        print([len(bs) for bs in bounds])
+        bounds = [bs.copy() for bs in self._plane_grid_centers]
+        print([len(bs) for bs in bounds])
 
         # Fix the grid boundaries to match the analytic monitor boundaries.
         _, plane_inds = self.monitor.pop_axis([0, 1, 2], self.monitor.size.index(0.0))
         mnt_bounds = np.array(self.monitor.bounds)
         mnt_bounds = mnt_bounds[:, plane_inds].T
+
+        bounds[0] = np.array([mnt_bounds[0, 0]] + bounds[0].tolist() + [mnt_bounds[0, 1]])
+        bounds[1] = np.array([mnt_bounds[1, 0]] + bounds[1].tolist() + [mnt_bounds[1, 1]])
+
+        print([len(bs) for bs in bounds])
 
         """Truncate bounds to monitor boundaries. This implicitly makes extra pixels which may be
         present have size 0 and so won't be included in the integration. For pixels intersected
@@ -322,7 +330,7 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
 
         # Interpolate field components to cell centers
         interp_dict = {"assume_sorted": True}
-        for dim, cents in zip(self._tangential_dims, self._plane_grid_centers):
+        for dim, cents in zip(self._tangential_dims, self._plane_grid_boundaries):
             if cents.size > 0:
                 interp_dict[dim] = cents
 
