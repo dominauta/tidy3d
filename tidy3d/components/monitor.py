@@ -193,20 +193,11 @@ class AbstractFieldMonitor(Monitor, ABC):
     )
 
     colocate: bool = pydantic.Field(
-        None,
+        True,
         title="Colocate fields",
-        description="Toggle whether fields should be colocated to grid cell centers. Default: "
-        "``False`` if ``interval_space`` is 1 in each direction, ``True`` if ``interval_space`` "
-        "is greater than one in any direction.",
+        description="Toggle whether fields should be colocated to grid cell boundaries (i.e. "
+        "primal grid nodes). Default is ``True``.",
     )
-
-    @pydantic.validator("colocate", always=True)
-    def set_default_colocate(cls, val, values):
-        """Toggle default field colocation setting based on `interval_space`."""
-        interval_space = values.get("interval_space")
-        if val is None:
-            val = sum(interval_space) != 3
-        return val
 
     def downsampled_num_cells(self, num_cells: Tuple[int, int, int]) -> Tuple[int, int, int]:
         """Given a tuple of the number of cells spanned by the monitor along each dimension,

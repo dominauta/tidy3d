@@ -282,6 +282,26 @@ class Grid(Tidy3dBaseModel):
         return Coords(**{key: np.diff(val) for key, val in self.boundaries.to_dict.items()})
 
     @property
+    def colocation_coords(self) -> Coords:
+        """Return default colocation coords in the :class:`Grid`.
+
+        Returns
+        -------
+        :class:`Coords`
+            Same as ``self.boundaries``, except the last boundary is missing.
+
+        Example
+        -------
+        >>> x = np.linspace(-1, 1, 10)
+        >>> y = np.linspace(-1, 1, 11)
+        >>> z = np.linspace(-1, 1, 12)
+        >>> coords = Coords(x=x, y=y, z=z)
+        >>> grid = Grid(boundaries=coords)
+        >>> sizes = grid.colocation_coords
+        """
+        return Coords(**{key: val[:-1] for key, val in self.boundaries.to_dict.items()})
+
+    @property
     def num_cells(self) -> Tuple[int, int, int]:
         """Return sizes of the cells in the :class:`Grid`.
 
@@ -457,13 +477,19 @@ class Grid(Tidy3dBaseModel):
             extend_normal = extend_2d_normal and axis == normal_axis
             if ind_max > ind_min:
                 # Left side
-                if (box.bounds[0][axis] < self.centers.to_list[axis][ind_min] and extend) or (extend and extend_normal):
+                if (box.bounds[0][axis] < self.centers.to_list[axis][ind_min] and extend) or (
+                    extend and extend_normal
+                ):
                     # Box bounds on the left side are to the left of the closest grid center
                     ind_min -= 1
 
                 # Right side
                 closest_center = self.centers.to_list[axis][ind_max - 1]
-                if extend or extend_normal or (extend_2d_normal and box.bounds[1][axis] > closest_center):
+                if (
+                    extend
+                    or extend_normal
+                    or (extend_2d_normal and box.bounds[1][axis] > closest_center)
+                ):
                     # We always need an extra pixel on the right for the tangential components
                     ind_max += 1
                 # if extend_normal and box.bounds[1][axis] > closest_center:

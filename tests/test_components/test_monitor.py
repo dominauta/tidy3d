@@ -203,15 +203,7 @@ def test_monitor_freqs_empty():
 
 
 def test_monitor_downsampling():
-    # test that the downsampling parameters can be set and the colocation validator works
-
-    monitor = td.FieldMonitor(
-        size=(td.inf, td.inf, td.inf),
-        freqs=np.linspace(0, 200e12, 10001),
-        name="test",
-        interval_space=(1, 1, 1),
-    )
-    assert monitor.colocate is False
+    # test that the downsampling parameters can be set
 
     monitor = td.FieldMonitor(
         size=(td.inf, td.inf, td.inf),

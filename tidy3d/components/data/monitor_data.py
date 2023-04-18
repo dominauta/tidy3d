@@ -174,7 +174,7 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
     def _expanded_grid_field_coords(self, field_name: str):
         """Coordinates in the expanded grid corresponding to a given field component."""
         if self.monitor.colocate:
-            return self.grid_expanded["centers"]
+            return self.grid_expanded.colocation_coords
         return self.grid_expanded[self.grid_locations[field_name]]
 
     @property

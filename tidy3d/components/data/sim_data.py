@@ -248,6 +248,39 @@ class SimulationData(Tidy3dBaseModel):
 
         return monitor_data.colocate(**xyz_kwargs)
 
+    def at_boundaries(self, field_monitor_name: str) -> xr.Dataset:
+        """return xarray.Dataset representation of field monitor data colocated at Yee cell
+        boundaries.
+
+        Parameters
+        ----------
+        field_monitor_name : str
+            Name of field monitor used in the original :class:`Simulation`.
+
+        Returns
+        -------
+        xarray.Dataset
+            Dataset containing all of the fields in the data interpolated to boundary locations on
+            the Yee grid.
+        """
+
+        # get the data
+        monitor_data = self.load_field_monitor(field_monitor_name)
+
+        # discretize the monitor and get center locations
+        sub_grid = self.simulation.discretize(monitor_data.monitor, extend=False)
+        boundaries = sub_grid.boundaries
+
+        # pass coords if each of the scalar field data have more than one coordinate along a dim
+        xyz_kwargs = {}
+        for dim, bounds in zip("xyz", (boundaries.x, boundaries.y, boundaries.z)):
+            scalar_data = list(monitor_data.field_components.values())
+            coord_lens = [len(data.coords[dim]) for data in scalar_data]
+            if all(ncoords > 1 for ncoords in coord_lens):
+                xyz_kwargs[dim] = bounds[1:-1]
+
+        return monitor_data.colocate(**xyz_kwargs)
+
     # pylint: disable=too-many-locals
     def get_poynting_vector(self, field_monitor_name: str) -> xr.Dataset:
         """return ``xarray.Dataset`` of the Poynting vector at Yee cell centers.
