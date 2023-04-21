@@ -5,7 +5,7 @@ from typing import Union, Tuple
 import pydantic
 import numpy as np
 
-from .types import Ax, EMField, ArrayFloat1D, FreqArray, FreqBound
+from .types import Ax, EMField, ArrayFloat1D, FreqArray, FreqBound, Numpy
 from .types import Literal, Direction, Coordinate, Axis, ObsGridArray
 from .geometry import Box
 from .validators import assert_plane
@@ -64,6 +64,40 @@ class Monitor(Box, ABC):
         int
             Number of bytes to be stored in monitor.
         """
+
+    def downsample(self, arr: Numpy, axis: Axis) -> Numpy:
+        """Downsample a 1D array making sure to keep the first and last entries, based on the
+        spatial interval defined for the ``axis``.
+
+        Parameters
+        ----------
+        arr : Numpy
+            A 1D array of arbitrary type.
+        axis : Axis
+            Axis for which to select the interval_space defined for the monitor.
+
+        Returns
+        -------
+        Numpy
+            Downsampled array.
+        """
+
+        size = len(arr)
+        interval = self._interval_space[axis]
+        # There should always be at least 3 indices for "surface" monitors. Also, if the
+        # size along this dim is already smaller than the interval, then don't downsample.
+        if size < 4 or (size - 1) <= interval:
+            return arr
+        # make sure the last index is always included
+        inds = np.arange(0, size, interval)
+        if inds[-1] != size - 1:
+            inds = np.append(inds, size - 1)
+        return arr[inds]
+
+    @property
+    def _interval_space(self):
+        """No downsampling by default, to be overwritten by monitors that allow for that."""
+        return (1, 1, 1)
 
 
 class FreqMonitor(Monitor, ABC):
@@ -203,13 +237,13 @@ class AbstractFieldMonitor(Monitor, ABC):
         """Given a tuple of the number of cells spanned by the monitor along each dimension,
         return the number of cells one would have after downsampling based on ``interval_space``.
         """
-        num_cells_new = list(num_cells)
-        for idx, interval in enumerate(self.interval_space):
-            if interval == 1 or num_cells[idx] < 4 or (num_cells[idx] - 1) <= interval:
-                continue
-            num_cells_new[idx] = np.floor((num_cells[idx] - 1) / interval) + 1
-            num_cells_new[idx] += int((num_cells[idx] - 1) % interval > 0)
-        return num_cells_new
+        arrs = [np.arange(ncells) for ncells in num_cells]
+        return tuple((self.downsample(arr, axis=dim).size for dim, arr in enumerate(arrs)))
+
+    @property
+    def _interval_space(self):
+        """Downsampling interval."""
+        return self.interval_space
 
 
 class PlanarMonitor(Monitor, ABC):

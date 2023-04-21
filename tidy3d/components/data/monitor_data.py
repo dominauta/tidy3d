@@ -122,6 +122,7 @@ class AbstractFieldData(MonitorData, AbstractFieldDataset, ABC):
 
                 # Get coordinates for this field component on the expanded grid
                 coords = field_coords.to_list[sym_dim]
+                coords = self.monitor.downsample(coords, axis=sym_dim)
 
                 # Get indexes of coords that lie on the left of the symmetry center
                 flip_inds = np.where(coords < sym_loc)[0]
