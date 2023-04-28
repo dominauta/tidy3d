@@ -277,7 +277,8 @@ class SimulationData(Tidy3dBaseModel):
             scalar_data = list(monitor_data.field_components.values())
             coord_lens = [len(data.coords[dim]) for data in scalar_data]
             if all(ncoords > 1 for ncoords in coord_lens):
-                xyz_kwargs[dim] = bounds[1:-1]
+                # Exclude first and last boundaries as they are outside of the monitor
+                xyz_kwargs[dim] = bounds
 
         return monitor_data.colocate(**xyz_kwargs)
 

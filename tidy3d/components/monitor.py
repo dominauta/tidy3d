@@ -99,6 +99,12 @@ class Monitor(Box, ABC):
         """No downsampling by default, to be overwritten by monitors that allow for that."""
         return (1, 1, 1)
 
+    @property
+    def colocate_primal_grid(self):
+        """Defines whether the monitor colocates field values to the primal grid. Set to True by
+        default, and overwritten where colocation is off, or where it is set by an input argument.
+        """
+        return True
 
 class FreqMonitor(Monitor, ABC):
     """:class:`Monitor` that records data in the frequency-domain."""
@@ -245,6 +251,10 @@ class AbstractFieldMonitor(Monitor, ABC):
         """Downsampling interval."""
         return self.interval_space
 
+    @property
+    def colocate_primal_grid(self):
+        """Colocation setting."""
+        return self.colocate
 
 class PlanarMonitor(Monitor, ABC):
     """:class:`Monitor` that has a planar geometry."""
@@ -379,6 +389,11 @@ class PermittivityMonitor(FreqMonitor):
         # stores 3 complex number per grid cell, per frequency
         return BYTES_COMPLEX * num_cells * len(self.freqs) * 3
 
+    @property
+    def colocate_primal_grid(self):
+        """Permittivity monitors do not colocate as interpolating the permittivity is not
+        physically meaningful (it does not match the subpixel averaging scheme)."""
+        return False
 
 class SurfaceIntegrationMonitor(Monitor, ABC):
     """Abstract class for monitors that perform surface integrals during the solver run, as in

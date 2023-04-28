@@ -424,10 +424,7 @@ class Grid(Tidy3dBaseModel):
 
         return Coords(**yee_coords)
 
-    # pylint:disable=too-many-locals
-    def discretize_inds(
-        self, box: Box, extend: bool = False, extend_2d_normal: bool = False
-    ) -> List[Tuple[int, int]]:
+    def discretize_inds(self, box: Box, extend: bool = False) -> List[Tuple[int, int]]:
         """Start and stopping indexes for the cells that intersect with a :class:`Box`.
 
         Parameters
@@ -436,11 +433,8 @@ class Grid(Tidy3dBaseModel):
             Rectangular geometry within simulation to discretize.
         extend : bool = False
             If ``True``, ensure that the returned indexes extend sufficiently in very direction to
-            be able to interpolate any field component at any point within the ``box``.
-        extend_2d_normal : bool = False
-            If ``True``, and the box is size zero along a single dimension, ensure that the returned
-            indexes extend sufficiently along that dimension to be able to interpolate to the
-            box center from data that lives on grid cell boundaries.
+            be able to interpolate any field component at any point within the ``box``, for field
+            components sampled on the Yee grid.
 
         Returns
         -------
@@ -453,12 +447,6 @@ class Grid(Tidy3dBaseModel):
         boundaries = self.boundaries
 
         inds_list = []
-
-        if len(box.zero_dims) == 1:
-            # 2D box, ``extend_2d_normal`` applies if ``True``
-            normal_axis = box.zero_dims[0]
-        else:
-            normal_axis = -1
 
         # for each dimension
         for axis, (pt_min, pt_max) in enumerate(zip(pts_min, pts_max)):
@@ -474,29 +462,14 @@ class Grid(Tidy3dBaseModel):
             ind_min = 0 if len(inds_leq_pt_min) == 0 else inds_leq_pt_min[-1]
 
             # handle extensions
-            extend_normal = extend_2d_normal and axis == normal_axis
-            if ind_max > ind_min:
+            if ind_max > ind_min and extend:
                 # Left side
-                if (box.bounds[0][axis] < self.centers.to_list[axis][ind_min] and extend) or (
-                    extend and extend_normal
-                ):
+                if box.bounds[0][axis] < self.centers.to_list[axis][ind_min]:
                     # Box bounds on the left side are to the left of the closest grid center
                     ind_min -= 1
 
-                # Right side
-                closest_center = self.centers.to_list[axis][ind_max - 1]
-                if (
-                    extend
-                    or extend_normal
-                    or (extend_2d_normal and box.bounds[1][axis] > closest_center)
-                ):
-                    # We always need an extra pixel on the right for the tangential components
-                    ind_max += 1
-                # if extend_normal and box.bounds[1][axis] > closest_center:
-                #     # Box bounds on the right side are to the right of the closest grid center.
-                #     # Requires extra pixel to be able to compute flux either at the closest
-                #     # center if extend==False, or at the next center on the right if extend==True
-                #     ind_max += 1
+                # We always need an extra pixel on the right for the tangential components
+                ind_max += 1
 
             # store indexes
             inds_list.append((ind_min, ind_max))
