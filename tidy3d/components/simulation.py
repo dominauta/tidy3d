@@ -2562,13 +2562,14 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
             # ind_end + 1 because we are selecting cell boundaries not cells
             boundary_dict[dim] = grid.extended_subspace(idim, ind_beg, ind_end + 1, periodic)
 
-            # Overwrite with zero dimension snapped, if requested
-            if snap_zero_dim:
-                if self.size[idim] == 0:
-                    boundary_dict[dim] = [self.center[idim], self.center[idim]]
-                elif box.size[idim] == 0:
-                    boundary_dict[dim] = [box.center[idim], box.center[idim]]
-        return Grid(boundaries=Coords(**boundary_dict))
+        grid = Grid(boundaries=Coords(**boundary_dict))
+
+        # Overwrite with zero dimension snapped, if requested
+        if snap_zero_dim:
+            grid = grid.snap_to_box_zero_dim(box)
+            grid = grid.snap_to_box_zero_dim(self)
+
+        return grid
 
     @cached_property
     def _periodic(self) -> Tuple[bool, bool, bool]:

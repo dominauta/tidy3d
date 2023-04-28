@@ -561,3 +561,28 @@ class Grid(Tidy3dBaseModel):
                 reverse = False
 
         return padded_coords[ind_beg:ind_end]
+
+    def snap_to_box_zero_dim(self, box: Box):
+        """Snap a grid to an exact box position for dimensions for which the box is size 0.
+        If the box location is outside of the grid, an error is raised.
+        
+        Parameters
+        ----------
+        box : Box
+            Box to use for the zero dim check.
+        
+        Returns
+        -------
+        Grid
+            Snapped copy of the grid.
+        """
+
+        boundary_dict = self.boundaries.to_dict
+        for dim, center, size in zip("xyz", box.center, box.size):
+            # Overwrite grid boundaries with box center if box is size 0 along dimension
+            if size == 0:
+                if boundary_dict[dim][0] > center or boundary_dict[dim][-1] < center:
+                    raise ValueError("Cannot snap grid to box center outside of grid domain.")
+                else:
+                    boundary_dict[dim] = [center, center]
+        return self.updated_copy(boundaries=Coords(**boundary_dict))
