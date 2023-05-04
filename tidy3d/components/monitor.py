@@ -101,10 +101,12 @@ class Monitor(Box, ABC):
 
     @property
     def colocate_primal_grid(self):
-        """Defines whether the monitor colocates field values to the primal grid. Set to True by
-        default, and overwritten where colocation is off, or where it is set by an input argument.
+        """Defines whether the monitor colocates field values to the primal grid on the fly during
+        the solver run. Set to True by default, and overwritten where colocation is off, or 
+        where it is set by an input argument.
         """
         return True
+
 
 class FreqMonitor(Monitor, ABC):
     """:class:`Monitor` that records data in the frequency-domain."""
@@ -256,6 +258,7 @@ class AbstractFieldMonitor(Monitor, ABC):
         """Colocation setting."""
         return self.colocate
 
+
 class PlanarMonitor(Monitor, ABC):
     """:class:`Monitor` that has a planar geometry."""
 
@@ -395,6 +398,7 @@ class PermittivityMonitor(FreqMonitor):
         physically meaningful (it does not match the subpixel averaging scheme)."""
         return False
 
+
 class SurfaceIntegrationMonitor(Monitor, ABC):
     """Abstract class for monitors that perform surface integrals during the solver run, as in
     flux and near to far transformations."""
@@ -529,6 +533,11 @@ class ModeMonitor(AbstractModeMonitor):
         # stores 3 complex numbers per frequency, per mode.
         return 3 * BYTES_COMPLEX * len(self.freqs) * self.mode_spec.num_modes
 
+    @property
+    def colocate_primal_grid(self):
+        """Diffraction monitor interpolates fields in post-processing.
+        """
+        return False
 
 class ModeSolverMonitor(AbstractModeMonitor):
     """:class:`Monitor` that stores the mode field profiles returned by the mode solver in the
@@ -896,6 +905,12 @@ class DiffractionMonitor(PlanarMonitor, FreqMonitor):
         """Size of monitor storage given the number of points after discretization."""
         # assumes 1 diffraction order per frequency; actual size will be larger
         return BYTES_COMPLEX * len(self.freqs)
+
+    @property
+    def colocate_primal_grid(self):
+        """Diffraction monitor interpolates fields in post-processing.
+        """
+        return False
 
 
 # types of monitors that are accepted by simulation

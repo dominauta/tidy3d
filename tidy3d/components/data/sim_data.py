@@ -1,6 +1,6 @@
 """ Simulation Level Data """
 from __future__ import annotations
-from typing import Dict, Callable, Tuple
+from typing import Dict, Callable, Tuple, Literal
 
 import xarray as xr
 import pydantic as pd
@@ -9,6 +9,7 @@ import numpy as np
 from .monitor_data import MonitorDataTypes, MonitorDataType, AbstractFieldData, FieldTimeData
 from ..base import Tidy3dBaseModel
 from ..simulation import Simulation
+from ..grid.grid import Coords
 from ..boundary import BlochBoundary
 from ..source import TFSF
 from ..types import Ax, Axis, annotate_type, FieldVal, PlotScale, ColormapType
@@ -201,8 +202,7 @@ class SimulationData(Tidy3dBaseModel):
         return mon_data
 
     def at_centers(self, field_monitor_name: str) -> xr.Dataset:
-        """return xarray.Dataset representation of field monitor data
-        co-located at Yee cell centers.
+        """Return xarray.Dataset representation of field monitor data colocated at Yee cell centers.
 
         Parameters
         ----------
@@ -212,8 +212,8 @@ class SimulationData(Tidy3dBaseModel):
         Returns
         -------
         xarray.Dataset
-            Dataset containing all of the fields in the data
-            interpolated to center locations on Yee grid.
+            Dataset containing all of the fields in the data interpolated to center locations on
+            the Yee grid.
         """
 
         return self._at_centers(self.load_field_monitor(field_monitor_name))
@@ -235,21 +235,10 @@ class SimulationData(Tidy3dBaseModel):
         """
 
         # discretize the monitor and get center locations
-        sub_grid = self.simulation.discretize(monitor_data.monitor, extend=False)
-        centers = sub_grid.centers
-
-        # pass coords if each of the scalar field data have more than one coordinate along a dim
-        xyz_kwargs = {}
-        for dim, centers in zip("xyz", (centers.x, centers.y, centers.z)):
-            scalar_data = list(monitor_data.field_components.values())
-            coord_lens = [len(data.coords[dim]) for data in scalar_data]
-            if all(ncoords > 1 for ncoords in coord_lens):
-                xyz_kwargs[dim] = centers
-
-        return monitor_data.colocate(**xyz_kwargs)
+        return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "centers"))
 
     def at_boundaries(self, field_monitor_name: str) -> xr.Dataset:
-        """return xarray.Dataset representation of field monitor data colocated at Yee cell
+        """Return xarray.Dataset representation of field monitor data colocated at Yee cell
         boundaries.
 
         Parameters
@@ -268,19 +257,24 @@ class SimulationData(Tidy3dBaseModel):
         monitor_data = self.load_field_monitor(field_monitor_name)
 
         # discretize the monitor and get center locations
-        sub_grid = self.simulation.discretize(monitor_data.monitor, extend=False)
-        boundaries = sub_grid.boundaries
+        return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "boundaries"))
 
-        # pass coords if each of the scalar field data have more than one coordinate along a dim
-        xyz_kwargs = {}
-        for dim, bounds in zip("xyz", (boundaries.x, boundaries.y, boundaries.z)):
-            scalar_data = list(monitor_data.field_components.values())
-            coord_lens = [len(data.coords[dim]) for data in scalar_data]
-            if all(ncoords > 1 for ncoords in coord_lens):
-                # Exclude first and last boundaries as they are outside of the monitor
-                xyz_kwargs[dim] = bounds
+    def _colocation_coords(self, monitor, location=Literal["centers", "boundaries"]) -> Coords:
+        """Coordinates at grid centers or grid boundaries to be used when colocating data."""
 
-        return monitor_data.colocate(**xyz_kwargs)
+        # Get monitor grid coordinates at the requested location
+        expand_size = [size - 1e-8 if size > 1e-8 else size for size in monitor.size]
+        monitor = monitor.copy(update=dict(size=expand_size))
+        mnt_grid = self.simulation.discretize(monitor, extend=False)
+        coords = {}
+        for dim, (key, coos) in enumerate(mnt_grid[location].to_dict.items()):
+            if monitor.size[dim] == 0:
+                # Colocate to exact monitor location along zero-sized dimension
+                coords[key] = np.array([monitor.center[dim]])
+            else:
+                coords[key] = coos
+
+        return Coords(**coords)
 
     # pylint: disable=too-many-locals
     def get_poynting_vector(self, field_monitor_name: str) -> xr.Dataset:
@@ -398,7 +392,7 @@ class SimulationData(Tidy3dBaseModel):
                     return self._field_component_value(derived_data, val)
                 raise Tidy3dKeyError(f"Poynting component {field_name} not available")
         else:
-            dataset = self.at_centers(field_monitor_name)
+            dataset = self.at_boundaries(field_monitor_name)
 
         if field_name in ("E", "H", "S"):
             # Gather vector components

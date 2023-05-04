@@ -96,6 +96,7 @@ def test_extend_grid():
     assert np.diff(inds_l_0_0) == np.diff(inds_l_1_0) - 2
     assert np.diff(inds_r_0_0) == np.diff(inds_r_1_0) - 1
 
+
 def test_extended_subspace():
     g = make_grid()
     coords = g.extended_subspace(axis=0, ind_beg=-4, ind_end=6, periodic=False)

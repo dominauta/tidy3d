@@ -2636,7 +2636,6 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
         """
 
         sub_grid = self.discretize(box)
-        print(sub_grid.boundaries.to_list[0])
         return self.epsilon_on_grid(grid=sub_grid, coord_key=coord_key, freq=freq)
 
     def epsilon_on_grid(

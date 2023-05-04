@@ -46,7 +46,7 @@ class AbstractFieldDataset(Dataset, ABC):
         return xr.Dataset(centered_fields)
 
     def colocate(self, x=None, y=None, z=None) -> xr.Dataset:
-        """colocate all of the data at a set of x, y, z coordinates.
+        """Colocate all of the data at a set of x, y, z coordinates.
 
         Parameters
         ----------

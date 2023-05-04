@@ -282,26 +282,6 @@ class Grid(Tidy3dBaseModel):
         return Coords(**{key: np.diff(val) for key, val in self.boundaries.to_dict.items()})
 
     @property
-    def colocation_coords(self) -> Coords:
-        """Return default colocation coords in the :class:`Grid`.
-
-        Returns
-        -------
-        :class:`Coords`
-            Same as ``self.boundaries``, except the last boundary is missing.
-
-        Example
-        -------
-        >>> x = np.linspace(-1, 1, 10)
-        >>> y = np.linspace(-1, 1, 11)
-        >>> z = np.linspace(-1, 1, 12)
-        >>> coords = Coords(x=x, y=y, z=z)
-        >>> grid = Grid(boundaries=coords)
-        >>> sizes = grid.colocation_coords
-        """
-        return Coords(**{key: val[:-1] for key, val in self.boundaries.to_dict.items()})
-
-    @property
     def num_cells(self) -> Tuple[int, int, int]:
         """Return sizes of the cells in the :class:`Grid`.
 
@@ -538,12 +518,12 @@ class Grid(Tidy3dBaseModel):
     def snap_to_box_zero_dim(self, box: Box):
         """Snap a grid to an exact box position for dimensions for which the box is size 0.
         If the box location is outside of the grid, an error is raised.
-        
+
         Parameters
         ----------
         box : Box
             Box to use for the zero dim check.
-        
+
         Returns
         -------
         Grid
@@ -556,6 +536,5 @@ class Grid(Tidy3dBaseModel):
             if size == 0:
                 if boundary_dict[dim][0] > center or boundary_dict[dim][-1] < center:
                     raise ValueError("Cannot snap grid to box center outside of grid domain.")
-                else:
-                    boundary_dict[dim] = [center, center]
+                boundary_dict[dim] = [center, center]
         return self.updated_copy(boundaries=Coords(**boundary_dict))
