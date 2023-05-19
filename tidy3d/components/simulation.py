@@ -22,6 +22,7 @@ from .grid.grid_spec import GridSpec, UniformGrid, AutoGrid
 from .medium import Medium, MediumType, AbstractMedium, PECMedium
 from .medium import AbstractCustomMedium, Medium2D, MediumType3D
 from .medium import AnisotropicMedium, FullyAnisotropicMedium, AbstractPerturbationMedium
+from .medium import AbstractNonlinearMedium
 from .boundary import BoundarySpec, BlochBoundary, PECBoundary, PMCBoundary, Periodic
 from .boundary import PML, StablePML, Absorber, AbsorberSpec
 from .structure import Structure
@@ -2714,6 +2715,12 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
 
                     red_coords = Coords(**dict(zip("xyz", coords_reduced)))
                     eps_structure = get_eps(structure=structure, frequency=freq, coords=red_coords)
+
+                    if isinstance(structure.medium, AbstractNonlinearMedium):
+                        consolidated_logger.warning(
+                            "Evaluating permittivity of a nonlinear "
+                            "medium ignores the nonlinearity."
+                        )
 
                     if isinstance(structure.geometry, TriangleMesh):
                         consolidated_logger.warning(

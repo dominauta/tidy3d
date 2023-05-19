@@ -224,6 +224,13 @@ SIM_FULL = Simulation(
             medium=custom_sellmeier,
         ),
         Structure(
+            geometry=Box(
+                size=(1, 1, 1),
+                center=(-1.0, 0.5, 0.5),
+            ),
+            medium=KerrMedium(chi3=0.1, numiters=20),
+        ),
+        Structure(
             geometry=PolySlab(
                 vertices=[(-1.5, -1.5), (-0.5, -1.5), (-0.5, -0.5)], slab_bounds=[-1, 1]
             ),

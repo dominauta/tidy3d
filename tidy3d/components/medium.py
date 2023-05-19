@@ -34,6 +34,10 @@ FREQ_EVAL_INF = 1e50
 # extrapolation option in custom medium
 FILL_VALUE = "extrapolate"
 
+# max num iters for nonlinear medium
+# None for no max
+NONLINEAR_MAX_NUMITERS = None
+
 
 def ensure_freq_in_range(eps_model: Callable[[float], complex]) -> Callable[[float], complex]:
     """Decorate ``eps_model`` to log warning if frequency supplied is out of bounds."""
@@ -3186,6 +3190,73 @@ class PerturbationPoleResidue(PoleResidue, AbstractPerturbationMedium):
         return CustomPoleResidue.parse_obj(new_dict)
 
 
+class AbstractNonlinearMedium(AbstractMedium, ABC):
+    """Abstract nonlinear medium.
+
+    Note
+    ----
+    The nonlinear constitutive relation is solved iteratively; it may not converge
+    for strong nonlinearities. Increasing `numiters` can help with convergence.
+
+    """
+
+    numiters: pd.PositiveInt = pd.Field(
+        1,
+        title="Number of iterations",
+        description="Number of iterations for solving nonlinear constitutive relation.",
+    )
+
+    @pd.validator("numiters", always=True)
+    def _numiters_allowed(cls, val):
+        """Check that numiters is less than NONLINEAR_MAX_NUMITERS."""
+        if NONLINEAR_MAX_NUMITERS is None:
+            return val
+        if val > NONLINEAR_MAX_NUMITERS:
+            raise ValidationError(
+                "'AbstractNonlinearMedium.numiters' cannot be greater than "
+                f"{NONLINEAR_MAX_NUMITERS}."
+            )
+        return val
+
+
+class KerrMedium(AbstractNonlinearMedium, Medium):
+    """Kerr medium described by a chi3 nonlinear susceptibility.
+
+    Note
+    ----
+    The instantaneous nonlinear polarization is given by
+    .. math::
+
+        P_{NL} = \\epsilon_0 \\chi_3 |E|^2 E
+
+    Note
+    ----
+    The nonlinear constitutive relation is solved iteratively; it may not converge
+    for strong nonlinearities. Increasing `numiters` can help with convergence.
+
+    Note
+    ----
+    For complex fields (e.g. when using Bloch boundary conditions), the nonlinearity
+    is applied separately to the real and imaginary parts, so that the above equation
+    holds when both E and :math:`P_{NL}` are replaced by their real or imaginary parts.
+    The nonlinearity is only applied to the real-valued fields since they are the
+    physical fields.
+
+    Note
+    ----
+    Different field components do not interact nonlinearly. For example,
+    when calculating :math:`P_{NL}_x`, we approximate :math:`|E|^2 \\approx |E_x|^2`.
+    This approximation is valid when the E field is predominantly polarized along one
+    of the x, y, or z axes.
+
+    Example
+    -------
+    >>> medium = KerrMedium(chi3=1)
+    """
+
+    chi3: float = pd.Field(..., title="Chi3", description="Chi3 nonlinear susceptibility.")
+
+
 # types of mediums that can be used in Simulation and Structures
 
 
@@ -3208,6 +3279,7 @@ MediumType3D = Union[
     CustomAnisotropicMedium,
     PerturbationMedium,
     PerturbationPoleResidue,
+    KerrMedium,
 ]
 
 

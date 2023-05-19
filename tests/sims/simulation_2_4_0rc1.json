@@ -593,6 +593,33 @@
         },
         {
             "geometry": {
+                "type": "Box",
+                "center": [
+                    -1.0,
+                    0.5,
+                    0.5
+                ],
+                "size": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "name": null,
+            "type": "Structure",
+            "medium": {
+                "name": null,
+                "frequency_range": null,
+                "allow_gain": false,
+                "type": "KerrMedium",
+                "permittivity": 1.0,
+                "conductivity": 0.0,
+                "numiters": 20,
+                "chi3": 0.1
+            }
+        },
+        {
+            "geometry": {
                 "type": "PolySlab",
                 "axis": 2,
                 "sidewall_angle": 0.0,
