@@ -68,6 +68,7 @@ class JaxGeometry(Geometry, ABC):
             fields=["Ex", "Ey", "Ez"],
             freqs=[freq],
             name=name + "_field",
+            colocate=False,
         )
 
         eps_mnt = PermittivityMonitor(
