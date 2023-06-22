@@ -102,7 +102,7 @@ class Monitor(Box, ABC):
     @property
     def colocate_primal_grid(self):
         """Defines whether the monitor colocates field values to the primal grid on the fly during
-        the solver run. Set to True by default, and overwritten where colocation is off, or 
+        the solver run. Set to True by default, and overwritten where colocation is off, or
         where it is set by an input argument.
         """
         return True
@@ -535,9 +535,9 @@ class ModeMonitor(AbstractModeMonitor):
 
     @property
     def colocate_primal_grid(self):
-        """Diffraction monitor interpolates fields in post-processing.
-        """
+        """Diffraction monitor interpolates fields in post-processing."""
         return False
+
 
 class ModeSolverMonitor(AbstractModeMonitor):
     """:class:`Monitor` that stores the mode field profiles returned by the mode solver in the
@@ -908,8 +908,7 @@ class DiffractionMonitor(PlanarMonitor, FreqMonitor):
 
     @property
     def colocate_primal_grid(self):
-        """Diffraction monitor interpolates fields in post-processing.
-        """
+        """Diffraction monitor interpolates fields in post-processing."""
         return False
 
 

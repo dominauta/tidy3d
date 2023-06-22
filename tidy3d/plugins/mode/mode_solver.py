@@ -95,6 +95,8 @@ class ModeSolver(Tidy3dBaseModel):
         return solver_sym
 
     def discretize(self, plane):
+        """Discretization similar to backend monitors."""
+
         expand_size = [size - 1e-8 if size > 1e-8 else size for size in plane.size]
         plane = plane.copy(update=dict(size=expand_size))
         grid = self.simulation.grid
@@ -103,16 +105,17 @@ class ModeSolver(Tidy3dBaseModel):
         span_inds[plane_inds, 0] -= 1
         span_inds[plane_inds, 1] += 1
         boundary_dict = {}
+        # pylint:diable=protected-access
         for idim, (dim, periodic) in enumerate(zip("xyz", self.simulation._periodic)):
             ind_beg, ind_end = span_inds[idim]
             # ind_end + 1 because we are selecting cell boundaries not cells
             boundary_dict[dim] = grid.extended_subspace(idim, ind_beg, ind_end + 1, periodic)
 
+        # pylint:disable=import-outside-toplevel
         from ...components.grid.grid import Coords
+        grid = Grid(boundaries=Coords(**boundary_dict)).snap_to_box_zero_dim(self.simulation)
 
-        return Grid(boundaries=Coords(**boundary_dict))
-
-
+        return grid
 
     @cached_property
     def _solver_grid(self) -> Grid:
@@ -136,18 +139,18 @@ class ModeSolver(Tidy3dBaseModel):
         # print(boundaries)
 
         boundaries = self.discretize(plane_sym).boundaries.to_list
-        # Do not extend if simulation has a single pixel along a dimension
-        for dim, num_cells in enumerate(self.simulation.grid.num_cells):
-            if num_cells <= 1:
-                boundaries[dim] = self.simulation.grid.boundaries.to_list[dim]
+        # # Do not extend if simulation has a single pixel along a dimension
+        # for dim, num_cells in enumerate(self.simulation.grid.num_cells):
+        #     if num_cells <= 1:
+        #         boundaries[dim] = self.simulation.grid.boundaries.to_list[dim]
         # Remove extension on the min side if symmetry present
         bounds_norm, bounds_plane = plane_sym.pop_axis(boundaries, self.normal_axis)
         bounds_plane = list(bounds_plane)
         for dim, sym in enumerate(self.solver_symmetry):
             if sym != 0:
-                bounds_plane[dim] = bounds_plane[dim][1:]
+                bounds_plane[dim] = bounds_plane[dim][2:]
         boundaries = plane_sym.unpop_axis(bounds_norm, bounds_plane, axis=self.normal_axis)
-        # print(boundaries)
+        print(boundaries)
         return Grid(boundaries=dict(zip("xyz", boundaries)))
 
     def solve(self) -> ModeSolverData:
@@ -272,7 +275,7 @@ class ModeSolver(Tidy3dBaseModel):
             monitor=mode_solver_monitor,
             symmetry=self.simulation.symmetry,
             symmetry_center=self.simulation.center,
-            grid_expanded=self.discretize(self.plane),
+            grid_expanded=self.discretize(self.plane).snap_to_box_zero_dim(self.plane)  ,
             grid_primal_correction=grid_factors[0],
             grid_dual_correction=grid_factors[1],
             eps_spec=eps_spec,

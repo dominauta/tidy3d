@@ -240,6 +240,48 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
         return fields
 
     @property
+    def colocation_boundaries(self) -> Coords:
+        """Coordinates to be used for colocation of the data to grid boundaries."""
+
+        # Get boundaries from the expanded grid
+        grid_bounds = self.grid_expanded.boundaries.to_list
+
+        # Non-colocating monitors can only colocate starting from the first boundary
+        # (unless there's a single data point, in which case data has already been snapped).
+        # Regardless of colocation, we also drop the last boundary.
+        colocate_bounds = []
+        for dim, bounds in enumerate(grid_bounds):
+            cbs = bounds[:-1]
+            if not self.monitor.colocate and cbs.size > 1:
+                cbs = cbs[1:]
+            colocate_bounds.append(cbs)
+
+        return Coords(**dict(zip("xyz", colocate_bounds)))
+
+    @property
+    def colocation_centers(self) -> Coords:
+        """Coordinates to be used for colocation of the data to grid centers."""
+        colocate_centers = {}
+        for dim, coords in self.colocation_boundaries.to_dict.items():
+            colocate_centers[dim] = (coords[1:] + coords[:-1]) / 2
+
+        return Coords(**colocate_centers)
+
+    # @property
+    # def _plane_grid_boundaries(self) -> Tuple[Coords1D, Coords1D]:
+    #     """For a 2D monitor data, return the boundaries of the in-plane grid to be used to compute
+    #     differential area and to colocate fields if needed."""
+    #     if np.any(np.array(self.monitor.interval_space) > 1):
+    #         raise Tidy3dNotImplementedError(
+    #             "Cannot determine grid boundaries corresponding to "
+    #             "down-sampled monitor data ('interval_space' > 1 along a direction)."
+    #         )
+    #     dim1, dim2 = self._tangential_dims
+    #     bounds_dict = self.colocation_boundaries.to_dict
+    #     print(bounds_dict)
+    #     return (bounds_dict[dim1], bounds_dict[dim2])
+
+    @property
     def _plane_grid_boundaries(self) -> Tuple[Coords1D, Coords1D]:
         """For a 2D monitor data, return the boundaries of the in-plane grid to be used to compute
         differential area and to colocate fields if needed."""
@@ -250,10 +292,12 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
             )
         dim1, dim2 = self._tangential_dims
 
+
         # Get boundaries from data coordinates
         fields = self.symmetry_expanded_copy.field_components
         plane_bounds1 = fields["E" + dim2].coords[dim1].values
         plane_bounds2 = fields["E" + dim1].coords[dim2].values
+
 
         # Non-colocating monitors can only colocate starting from the first boundary
         # (unless there's a single data point, in which case data has already been snapped).
@@ -262,6 +306,8 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
                 plane_bounds1 = plane_bounds1[1:]
             if plane_bounds2.size > 1:
                 plane_bounds2 = plane_bounds2[1:]        
+
+        print(plane_bounds1, plane_bounds2)
 
         return plane_bounds1, plane_bounds2
 
@@ -510,10 +556,6 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
         integrand = (e_self_x_h_other - h_self_x_e_other) * d_area
         return ModeAmpsDataArray(0.25 * integrand.sum(dim=d_area.dims))
 
-
-
-
-
     # @property
     # def _plane_grid_boundaries(self) -> Tuple[Coords1D, Coords1D]:
     #     """For a 2D monitor data, return the boundaries of the in-plane grid to be used to compute
@@ -744,10 +786,6 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
     #     d_area = self._diff_area
     #     integrand = (e_self_x_h_other - h_self_x_e_other) * d_area
     #     return ModeAmpsDataArray(0.25 * integrand.sum(dim=d_area.dims))
-
-
-
-
 
     def _interpolated_tangential_fields(self, coords: ArrayFloat2D) -> Dict[str, DataArray]:
         """For 2D monitors, interpolate this fields to given coords in the tangential plane.

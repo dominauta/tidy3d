@@ -234,8 +234,8 @@ class SimulationData(Tidy3dBaseModel):
             interpolated to center locations on Yee grid.
         """
 
-        # discretize the monitor and get center locations
-        return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "centers"))
+        # colocate to monitor grid centers
+        return monitor_data.at_coords(monitor_data.colocation_centers)
 
     def at_boundaries(self, field_monitor_name: str) -> xr.Dataset:
         """Return xarray.Dataset representation of field monitor data colocated at Yee cell
@@ -256,11 +256,69 @@ class SimulationData(Tidy3dBaseModel):
         # get the data
         monitor_data = self.load_field_monitor(field_monitor_name)
 
-        # discretize the monitor and get center locations
-        return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "boundaries"))
+        if monitor_data.monitor.colocate:
+            return xr.Dataset(monitor_data.field_components)
+
+        # colocate to monitor grid boundaries
+        return monitor_data.at_coords(monitor_data.colocation_boundaries)
+
+
+    # def at_centers(self, field_monitor_name: str) -> xr.Dataset:
+    #     """Return xarray.Dataset representation of field monitor data colocated at Yee cell centers.
+
+
+    #     Parameters
+    #     ----------
+    #     field_monitor_name : str
+    #         Name of field monitor used in the original :class:`Simulation`.
+
+
+    #     Returns
+    #     -------
+    #     xarray.Dataset
+    #         Dataset containing all of the fields in the data interpolated to center locations on
+    #         the Yee grid.
+    #     """
+
+
+    #     # get the data
+    #     monitor_data = self.load_field_monitor(field_monitor_name)
+
+
+    #     # discretize the monitor and get center locations
+    #     return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "centers"))
+
+
+    # def at_boundaries(self, field_monitor_name: str) -> xr.Dataset:
+    #     """Return xarray.Dataset representation of field monitor data colocated at Yee cell
+    #     boundaries.
+
+
+    #     Parameters
+    #     ----------
+    #     field_monitor_name : str
+    #         Name of field monitor used in the original :class:`Simulation`.
+
+
+    #     Returns
+    #     -------
+    #     xarray.Dataset
+    #         Dataset containing all of the fields in the data interpolated to boundary locations on
+    #         the Yee grid.
+    #     """
+
+
+    #     # get the data
+    #     monitor_data = self.load_field_monitor(field_monitor_name)
+
+
+    #     # discretize the monitor and get center locations
+    #     return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "boundaries"))
+
 
     def _colocation_coords(self, monitor, location=Literal["centers", "boundaries"]) -> Coords:
         """Coordinates at grid centers or grid boundaries to be used when colocating data."""
+
 
         # Get monitor grid coordinates at the requested location
         expand_size = [size - 1e-8 if size > 1e-8 else size for size in monitor.size]
@@ -273,6 +331,7 @@ class SimulationData(Tidy3dBaseModel):
                 coords[key] = np.array([monitor.center[dim]])
             else:
                 coords[key] = coos
+
 
         return Coords(**coords)
 

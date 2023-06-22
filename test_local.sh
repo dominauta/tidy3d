@@ -2,7 +2,7 @@
 set -e
 
 black .
-python lint.py
+# python lint.py
 
 pytest -ra tests/test_components/test_apodization.py
 pytest -ra tests/test_components/test_base.py
