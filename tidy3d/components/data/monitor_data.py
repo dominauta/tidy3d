@@ -267,20 +267,6 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
 
         return Coords(**colocate_centers)
 
-    # @property
-    # def _plane_grid_boundaries(self) -> Tuple[Coords1D, Coords1D]:
-    #     """For a 2D monitor data, return the boundaries of the in-plane grid to be used to compute
-    #     differential area and to colocate fields if needed."""
-    #     if np.any(np.array(self.monitor.interval_space) > 1):
-    #         raise Tidy3dNotImplementedError(
-    #             "Cannot determine grid boundaries corresponding to "
-    #             "down-sampled monitor data ('interval_space' > 1 along a direction)."
-    #         )
-    #     dim1, dim2 = self._tangential_dims
-    #     bounds_dict = self.colocation_boundaries.to_dict
-    #     print(bounds_dict)
-    #     return (bounds_dict[dim1], bounds_dict[dim2])
-
     @property
     def _plane_grid_boundaries(self) -> Tuple[Coords1D, Coords1D]:
         """For a 2D monitor data, return the boundaries of the in-plane grid to be used to compute
@@ -291,25 +277,39 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
                 "down-sampled monitor data ('interval_space' > 1 along a direction)."
             )
         dim1, dim2 = self._tangential_dims
+        bounds_dict = self.colocation_boundaries.to_dict
+        print(bounds_dict)
+        return (bounds_dict[dim1], bounds_dict[dim2])
+
+    # @property
+    # def _plane_grid_boundaries(self) -> Tuple[Coords1D, Coords1D]:
+    #     """For a 2D monitor data, return the boundaries of the in-plane grid to be used to compute
+    #     differential area and to colocate fields if needed."""
+    #     if np.any(np.array(self.monitor.interval_space) > 1):
+    #         raise Tidy3dNotImplementedError(
+    #             "Cannot determine grid boundaries corresponding to "
+    #             "down-sampled monitor data ('interval_space' > 1 along a direction)."
+    #         )
+    #     dim1, dim2 = self._tangential_dims
 
 
-        # Get boundaries from data coordinates
-        fields = self.symmetry_expanded_copy.field_components
-        plane_bounds1 = fields["E" + dim2].coords[dim1].values
-        plane_bounds2 = fields["E" + dim1].coords[dim2].values
+    #     # Get boundaries from data coordinates
+    #     fields = self.symmetry_expanded_copy.field_components
+    #     plane_bounds1 = fields["E" + dim2].coords[dim1].values
+    #     plane_bounds2 = fields["E" + dim1].coords[dim2].values
 
 
-        # Non-colocating monitors can only colocate starting from the first boundary
-        # (unless there's a single data point, in which case data has already been snapped).
-        if not self.monitor.colocate:
-            if plane_bounds1.size > 1:
-                plane_bounds1 = plane_bounds1[1:]
-            if plane_bounds2.size > 1:
-                plane_bounds2 = plane_bounds2[1:]        
+    #     # Non-colocating monitors can only colocate starting from the first boundary
+    #     # (unless there's a single data point, in which case data has already been snapped).
+    #     if not self.monitor.colocate:
+    #         if plane_bounds1.size > 1:
+    #             plane_bounds1 = plane_bounds1[1:]
+    #         if plane_bounds2.size > 1:
+    #             plane_bounds2 = plane_bounds2[1:]        
 
-        print(plane_bounds1, plane_bounds2)
+    #     print(plane_bounds1, plane_bounds2)
 
-        return plane_bounds1, plane_bounds2
+    #     return plane_bounds1, plane_bounds2
 
     @property
     def _plane_grid_centers(self) -> Tuple[Coords1D, Coords1D]:

@@ -97,7 +97,7 @@ class ModeSolver(Tidy3dBaseModel):
     def discretize(self, plane):
         """Discretization similar to backend monitors."""
 
-        expand_size = [size - 1e-8 if size > 1e-8 else size for size in plane.size]
+        expand_size = [size + 1e-8 if size > 1e-8 else size for size in plane.size]
         plane = plane.copy(update=dict(size=expand_size))
         grid = self.simulation.grid
         span_inds = np.array(grid.discretize_inds(plane, extend=False))
@@ -139,10 +139,10 @@ class ModeSolver(Tidy3dBaseModel):
         # print(boundaries)
 
         boundaries = self.discretize(plane_sym).boundaries.to_list
-        # # Do not extend if simulation has a single pixel along a dimension
-        # for dim, num_cells in enumerate(self.simulation.grid.num_cells):
-        #     if num_cells <= 1:
-        #         boundaries[dim] = self.simulation.grid.boundaries.to_list[dim]
+        # Do not extend if simulation has a single pixel along a dimension
+        for dim, num_cells in enumerate(self.simulation.grid.num_cells):
+            if num_cells <= 1:
+                boundaries[dim] = self.simulation.grid.boundaries.to_list[dim]
         # Remove extension on the min side if symmetry present
         bounds_norm, bounds_plane = plane_sym.pop_axis(boundaries, self.normal_axis)
         bounds_plane = list(bounds_plane)
@@ -150,7 +150,7 @@ class ModeSolver(Tidy3dBaseModel):
             if sym != 0:
                 bounds_plane[dim] = bounds_plane[dim][2:]
         boundaries = plane_sym.unpop_axis(bounds_norm, bounds_plane, axis=self.normal_axis)
-        print(boundaries)
+        # print(boundaries)
         return Grid(boundaries=dict(zip("xyz", boundaries)))
 
     def solve(self) -> ModeSolverData:
