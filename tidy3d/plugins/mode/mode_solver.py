@@ -275,7 +275,7 @@ class ModeSolver(Tidy3dBaseModel):
             monitor=mode_solver_monitor,
             symmetry=self.simulation.symmetry,
             symmetry_center=self.simulation.center,
-            grid_expanded=self.discretize(self.plane).snap_to_box_zero_dim(self.plane)  ,
+            grid_expanded=self.discretize(self.plane).snap_to_box_zero_dim(self.plane),
             grid_primal_correction=grid_factors[0],
             grid_dual_correction=grid_factors[1],
             eps_spec=eps_spec,

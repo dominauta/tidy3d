@@ -278,7 +278,6 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
             )
         dim1, dim2 = self._tangential_dims
         bounds_dict = self.colocation_boundaries.to_dict
-        print(bounds_dict)
         return (bounds_dict[dim1], bounds_dict[dim2])
 
     # @property
@@ -414,7 +413,6 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
                 interp_dict[dim] = bounds
 
         colocated_fields = {key: val.interp(**interp_dict) for key, val in field_components.items()}
-
         return colocated_fields
 
     @property

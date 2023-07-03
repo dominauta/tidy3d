@@ -257,7 +257,10 @@ class SimulationData(Tidy3dBaseModel):
         monitor_data = self.load_field_monitor(field_monitor_name)
 
         if monitor_data.monitor.colocate:
-            return xr.Dataset(monitor_data.field_components)
+            # TODO: this still errors if monitor_data.colocate is allowed to be ``True`` in the
+            # adjoint plugin, and the monitor data is tracked in a gradient computatin. It seems
+            # interpolating does something to the arrays that makes the JAX chain work.
+            return monitor_data.package_colocate_results(monitor_data.field_components)
 
         # colocate to monitor grid boundaries
         return monitor_data.at_coords(monitor_data.colocation_boundaries)
