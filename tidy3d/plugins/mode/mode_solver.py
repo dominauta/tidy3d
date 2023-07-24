@@ -94,64 +94,34 @@ class ModeSolver(Tidy3dBaseModel):
         _, solver_sym = self.plane.pop_axis(mode_symmetry, axis=self.normal_axis)
         return solver_sym
 
-    def discretize(self, plane):
-        """Discretization similar to backend monitors."""
-
-        expand_size = [size + 1e-8 if size > 1e-8 else size for size in plane.size]
-        plane = plane.copy(update=dict(size=expand_size))
-        grid = self.simulation.grid
-        span_inds = np.array(grid.discretize_inds(plane, extend=False))
-        _, plane_inds = plane.pop_axis([0, 1, 2], axis=self.normal_axis)
-        span_inds[plane_inds, 0] -= 1
-        span_inds[plane_inds, 1] += 1
-        boundary_dict = {}
-        # pylint:diable=protected-access
-        for idim, (dim, periodic) in enumerate(zip("xyz", self.simulation._periodic)):
-            ind_beg, ind_end = span_inds[idim]
-            # ind_end + 1 because we are selecting cell boundaries not cells
-            boundary_dict[dim] = grid.extended_subspace(idim, ind_beg, ind_end + 1, periodic)
-
-        # pylint:disable=import-outside-toplevel
-        from ...components.grid.grid import Coords
-        grid = Grid(boundaries=Coords(**boundary_dict)).snap_to_box_zero_dim(self.simulation)
-
-        return grid
-
     @cached_property
     def _solver_grid(self) -> Grid:
-        """Grid for the mode solver, including extension in the normal direction, which is needed
-        to get epsilon from the simulation. The mode fields coordinate along the normal direction
-        will be reset to the exact plane position after the solve."""
+        """Grid for the mode solver, not snapped to plane or simulation zero dims, and also with
+        a small correction for symmetries. We don't do the snapping yet because 0-sized cells are
+        currently confusing to the subpixel averaging. The final data coordinates along the
+        plane normal dimension and dimensions where the simulation domain is 2D will be correctly
+        set after the solve."""
         plane_sym = self.simulation.min_sym_box(self.plane)
+        monitor = self.to_mode_solver_monitor(name=MODE_MONITOR_NAME)
+        monitor = monitor.updated_copy(center=plane_sym.center, size=plane_sym.size)
+        span_inds = self.simulation._discretize_inds_monitor(monitor)
 
-        # boundaries = self.simulation.discretize(plane_sym, extend=True).boundaries.to_list
-        # # Do not extend if simulation has a single pixel along a dimension
-        # for dim, num_cells in enumerate(self.simulation.grid.num_cells):
-        #     if num_cells <= 1:
-        #         boundaries[dim] = self.simulation.grid.boundaries.to_list[dim]
-        # # Remove extension on the min side if symmetry present
-        # bounds_norm, bounds_plane = plane_sym.pop_axis(boundaries, self.normal_axis)
-        # bounds_plane = list(bounds_plane)
-        # for dim, sym in enumerate(self.solver_symmetry):
-        #     if sym != 0:
-        #         bounds_plane[dim] = bounds_plane[dim][1:]
-        # boundaries = plane_sym.unpop_axis(bounds_norm, bounds_plane, axis=self.normal_axis)
-        # print(boundaries)
+        # Remove extension along monitor normal
+        span_inds[self.normal_axis, 0] += 1
+        span_inds[self.normal_axis, 1] -= 1
 
-        boundaries = self.discretize(plane_sym).boundaries.to_list
         # Do not extend if simulation has a single pixel along a dimension
         for dim, num_cells in enumerate(self.simulation.grid.num_cells):
             if num_cells <= 1:
-                boundaries[dim] = self.simulation.grid.boundaries.to_list[dim]
+                span_inds[dim] = [0, 1]
+
         # Remove extension on the min side if symmetry present
-        bounds_norm, bounds_plane = plane_sym.pop_axis(boundaries, self.normal_axis)
-        bounds_plane = list(bounds_plane)
+        _, plane_inds = plane_sym.pop_axis([0, 1, 2], self.normal_axis)
         for dim, sym in enumerate(self.solver_symmetry):
             if sym != 0:
-                bounds_plane[dim] = bounds_plane[dim][2:]
-        boundaries = plane_sym.unpop_axis(bounds_norm, bounds_plane, axis=self.normal_axis)
-        # print(boundaries)
-        return Grid(boundaries=dict(zip("xyz", boundaries)))
+                span_inds[plane_inds[dim], 0] += 2
+
+        return self.simulation._subgrid(span_inds=span_inds)
 
     def solve(self) -> ModeSolverData:
         """:class:`.ModeSolverData` containing the field and effective index data.
@@ -237,17 +207,13 @@ class ModeSolver(Tidy3dBaseModel):
         data_dict = {"n_complex": index_data}
 
         # Construct and add all the data for the fields
+        # Snap the solver grid to plane normal and simulation 0-sized dims if any
+        grid_snapped = self._solver_grid.snap_to_box_zero_dim(self.plane)
+        grid_snapped = self.simulation._snap_zero_dim(grid_snapped)
+
+        # Construct the field data
         for field_name in ("Ex", "Ey", "Ez", "Hx", "Hy", "Hz"):
-
-            xyz_coords = self._solver_grid[field_name].to_list
-            # Snap to plane center along normal direction
-            xyz_coords[self.normal_axis] = [self.plane.center[self.normal_axis]]
-            # Snap to simulation center if simulation is 0D along a tangential dimension
-            _, plane_axes = self.plane.pop_axis([0, 1, 2], axis=self.normal_axis)
-            for plane_axis in plane_axes:
-                if len(xyz_coords[plane_axis]) == 1:
-                    xyz_coords[plane_axis] = [self.simulation.center[plane_axis]]
-
+            xyz_coords = grid_snapped[field_name].to_list
             scalar_field_data = ScalarModeFieldDataArray(
                 np.stack([field_freq[field_name] for field_freq in fields], axis=-2),
                 coords=dict(
@@ -271,11 +237,12 @@ class ModeSolver(Tidy3dBaseModel):
 
         # make mode solver data
         mode_solver_monitor = self.to_mode_solver_monitor(name=MODE_MONITOR_NAME)
+        grid_expanded = self.simulation.discretize_monitor(mode_solver_monitor)
         mode_solver_data = ModeSolverData(
             monitor=mode_solver_monitor,
             symmetry=self.simulation.symmetry,
             symmetry_center=self.simulation.center,
-            grid_expanded=self.discretize(self.plane).snap_to_box_zero_dim(self.plane),
+            grid_expanded=grid_expanded,
             grid_primal_correction=grid_factors[0],
             grid_dual_correction=grid_factors[1],
             eps_spec=eps_spec,
@@ -329,6 +296,7 @@ class ModeSolver(Tidy3dBaseModel):
         eps_tensor = [
             self.simulation.epsilon_on_grid(self._solver_grid, key, freq) for key in eps_keys
         ]
+        print(self._solver_grid)
         return np.stack(eps_tensor, axis=0)
 
     def _solver_eps(self, freq: float) -> ArrayComplex4D:

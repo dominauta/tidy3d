@@ -487,7 +487,7 @@ def run_emulated(simulation: Simulation, path: str = SIM_DATA_PATH, **kwargs) ->
         """make a random FieldData from a FieldMonitor."""
         field_cmps = {}
         coords = {}
-        grid = simulation.discretize(monitor, extend=True)
+        grid = simulation.discretize_monitor(monitor)
 
         for field_name in monitor.fields:
             spatial_coords_dict = grid[field_name].dict()
@@ -507,7 +507,7 @@ def run_emulated(simulation: Simulation, path: str = SIM_DATA_PATH, **kwargs) ->
             monitor=monitor,
             symmetry=simulation.symmetry,
             symmetry_center=simulation.center,
-            grid_expanded=simulation.discretize(monitor, extend=True),
+            grid_expanded=simulation.discretize_monitor(monitor),
             **field_cmps,
         )
 

@@ -245,8 +245,8 @@ def test_mode_solver_custom_medium(mock_remote_api, local):
         precision="double" if local else "single",
     )
 
-    plane_left = td.Box(center=(-0.5, 0, 0), size=(1, 0, 1))
-    plane_right = td.Box(center=(0.5, 0, 0), size=(1, 0, 1))
+    plane_left = td.Box(center=(-0.5, 0, 0), size=(0.9, 0, 0.9))
+    plane_right = td.Box(center=(0.5, 0, 0), size=(0.9, 0, 0.9))
 
     n_eff = []
     for plane in [plane_left, plane_right]:
@@ -341,6 +341,7 @@ def test_mode_solver_2D():
         grid_spec=td.GridSpec(wavelength=1.0),
         structures=[WAVEGUIDE],
         run_time=1e-12,
+        boundary_spec=td.BoundarySpec.pml(z=False),
         sources=[SRC],
     )
     ms = ModeSolver(

@@ -39,12 +39,12 @@ class Coords(Tidy3dBaseModel):
         ..., title="Z Coordinates", description="1-dimensional array of z coordinates."
     )
 
-    @cached_property
+    @property
     def to_dict(self):
         """Return a dict of the three Coord1D objects as numpy arrays."""
         return {key: np.array(value) for key, value in self.dict(exclude={TYPE_TAG_STR}).items()}
 
-    @cached_property
+    @property
     def to_list(self):
         """Return a list of the three Coord1D objects as numpy arrays."""
         return list(self.to_dict.values())
@@ -412,7 +412,7 @@ class Grid(Tidy3dBaseModel):
         box : :class:`Box`
             Rectangular geometry within simulation to discretize.
         extend : bool = False
-            If ``True``, ensure that the returned indexes extend sufficiently in very direction to
+            If ``True``, ensure that the returned indexes extend sufficiently in every direction to
             be able to interpolate any field component at any point within the ``box``, for field
             components sampled on the Yee grid.
 
@@ -530,11 +530,11 @@ class Grid(Tidy3dBaseModel):
             Snapped copy of the grid.
         """
 
-        boundary_dict = self.boundaries.to_dict
+        boundary_dict = self.boundaries.to_dict.copy()
         for dim, center, size in zip("xyz", box.center, box.size):
             # Overwrite grid boundaries with box center if box is size 0 along dimension
             if size == 0:
                 if boundary_dict[dim][0] > center or boundary_dict[dim][-1] < center:
                     raise ValueError("Cannot snap grid to box center outside of grid domain.")
-                boundary_dict[dim] = [center, center]
+                boundary_dict[dim] = np.array([center, center])
         return self.updated_copy(boundaries=Coords(**boundary_dict))

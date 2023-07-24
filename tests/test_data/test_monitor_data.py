@@ -52,7 +52,7 @@ def make_field_data(symmetry: bool = True):
         Hz=make_scalar_field_data_array("Hz", symmetry),
         symmetry=sim.symmetry,
         symmetry_center=sim.center,
-        grid_expanded=sim.discretize(FIELD_MONITOR, extend=True, snap_zero_dim=True),
+        grid_expanded=sim.discretize_monitor(FIELD_MONITOR),
     )
 
 
@@ -67,7 +67,7 @@ def make_field_time_data(symmetry: bool = True):
         Hx=make_scalar_field_time_data_array("Hx", symmetry),
         symmetry=sim.symmetry,
         symmetry_center=sim.center,
-        grid_expanded=sim.discretize(FIELD_TIME_MONITOR, extend=True, snap_zero_dim=True),
+        grid_expanded=sim.discretize_monitor(FIELD_TIME_MONITOR),
     )
 
 
@@ -82,7 +82,7 @@ def make_field_data_2d(symmetry: bool = True):
         Hz=make_scalar_field_data_array("Hz", symmetry).interp(y=[0]),
         symmetry=sim.symmetry,
         symmetry_center=sim.center,
-        grid_expanded=sim.discretize(FIELD_MONITOR_2D, extend=True, snap_zero_dim=True),
+        grid_expanded=sim.discretize_monitor(FIELD_MONITOR_2D),
     )
 
 
@@ -97,7 +97,7 @@ def make_field_time_data_2d(symmetry: bool = True):
         Hz=make_scalar_field_time_data_array("Hz", symmetry).interp(y=[0]),
         symmetry=sim.symmetry,
         symmetry_center=sim.center,
-        grid_expanded=sim.discretize(FIELD_TIME_MONITOR_2D, extend=True, snap_zero_dim=True),
+        grid_expanded=sim.discretize_monitor(FIELD_TIME_MONITOR_2D),
     )
 
 
@@ -112,7 +112,7 @@ def make_mode_solver_data():
         Hz=make_scalar_mode_field_data_array("Hz"),
         symmetry=SIM_SYM.symmetry,
         symmetry_center=SIM_SYM.center,
-        grid_expanded=SIM_SYM.discretize(MODE_SOLVE_MONITOR, extend=True, snap_zero_dim=True),
+        grid_expanded=SIM_SYM.discretize_monitor(MODE_SOLVE_MONITOR),
         n_complex=N_COMPLEX.copy(),
         grid_primal_correction=GRID_CORRECTION,
         grid_dual_correction=GRID_CORRECTION,
@@ -135,7 +135,7 @@ def make_mode_solver_data_smooth():
         Hz=make_scalar_mode_field_data_array_smooth("Hz", rot=0.78 * np.pi),
         symmetry=SIM_SYM.symmetry,
         symmetry_center=SIM_SYM.center,
-        grid_expanded=SIM_SYM.discretize(MODE_SOLVE_MONITOR, extend=True, snap_zero_dim=True),
+        grid_expanded=SIM_SYM.discretize_monitor(MODE_SOLVE_MONITOR),
         n_complex=N_COMPLEX.copy(),
         grid_primal_correction=GRID_CORRECTION,
         grid_dual_correction=GRID_CORRECTION,
@@ -156,7 +156,7 @@ def make_permittivity_data(symmetry: bool = True):
         eps_zz=make_scalar_field_data_array("Ez", symmetry),
         symmetry=sim.symmetry,
         symmetry_center=sim.center,
-        grid_expanded=sim.discretize(PERMITTIVITY_MONITOR, extend=True),
+        grid_expanded=sim.discretize_monitor(PERMITTIVITY_MONITOR),
     )
 
 
@@ -361,7 +361,7 @@ def test_empty_array():
         monitor=monitor,
         symmetry=SIM.symmetry,
         symmetry_center=SIM.center,
-        grid_expanded=SIM.discretize(monitor, extend=True),
+        grid_expanded=SIM.discretize_monitor(monitor),
         **fields
     )
 
@@ -375,7 +375,7 @@ def _test_empty_list():
         monitor=monitor,
         symmetry=SIM.symmetry,
         symmetry_center=SIM.center,
-        grid_expanded=SIM.discretize(monitor, extend=True),
+        grid_expanded=SIM.discretize_monitor(monitor),
         **fields
     )
 
@@ -389,7 +389,7 @@ def _test_empty_tuple():
         monitor=monitor,
         symmetry=SIM.symmetry,
         symmetry_center=SIM.center,
-        grid_expanded=SIM.discretize(monitor, extend=True),
+        grid_expanded=SIM.discretize_monitor(monitor),
         **fields
     )
 
@@ -403,7 +403,7 @@ def test_empty_io():
         monitor=monitor,
         symmetry=SIM.symmetry,
         symmetry_center=SIM.center,
-        grid_expanded=SIM.discretize(monitor, extend=True),
+        grid_expanded=SIM.discretize_monitor(monitor),
         **fields
     )
     field_data.to_file("tests/tmp/field_data.hdf5")
@@ -432,7 +432,7 @@ def test_field_data_symmetry_present():
         field_data = td.FieldTimeData(
             monitor=monitor,
             symmetry=(1, -1, 0),
-            grid_expanded=SIM.discretize(monitor, extend=True),
+            grid_expanded=SIM.discretize_monitor(monitor),
             **fields
         )
 

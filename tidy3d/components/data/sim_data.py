@@ -265,7 +265,6 @@ class SimulationData(Tidy3dBaseModel):
         # colocate to monitor grid boundaries
         return monitor_data.at_coords(monitor_data.colocation_boundaries)
 
-
     # def at_centers(self, field_monitor_name: str) -> xr.Dataset:
     #     """Return xarray.Dataset representation of field monitor data colocated at Yee cell centers.
 

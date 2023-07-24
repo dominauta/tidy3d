@@ -1,6 +1,6 @@
 """Objects that define how data is recorded from simulation."""
 from abc import ABC, abstractmethod
-from typing import Union, Tuple
+from typing import Union, Tuple, Literal
 
 import pydantic
 import numpy as np
@@ -30,6 +30,14 @@ class Monitor(Box, ABC):
         title="Name",
         description="Unique name for monitor.",
         min_length=1,
+    )
+
+    interval_space: Literal[((1, 1, 1),)] = pydantic.Field(
+        tuple((1, 1, 1)),
+        title="Spatial interval",
+        description="Number of grid step intervals between monitor recordings. If equal to 1, "
+        "there will be no downsampling. If greater than 1, fields will be downsampled "
+        "and automatically colocated. Not all monitors support values different from 1.",
     )
 
     @cached_property
@@ -83,7 +91,7 @@ class Monitor(Box, ABC):
         """
 
         size = len(arr)
-        interval = self._interval_space[axis]
+        interval = self.interval_space[axis]
         # There should always be at least 3 indices for "surface" monitors. Also, if the
         # size along this dim is already smaller than the interval, then don't downsample.
         if size < 4 or (size - 1) <= interval:
@@ -94,10 +102,12 @@ class Monitor(Box, ABC):
             inds = np.append(inds, size - 1)
         return arr[inds]
 
-    @property
-    def _interval_space(self):
-        """No downsampling by default, to be overwritten by monitors that allow for that."""
-        return (1, 1, 1)
+    def downsampled_num_cells(self, num_cells: Tuple[int, int, int]) -> Tuple[int, int, int]:
+        """Given a tuple of the number of cells spanned by the monitor along each dimension,
+        return the number of cells one would have after downsampling based on ``interval_space``.
+        """
+        arrs = [np.arange(ncells) for ncells in num_cells]
+        return tuple((self.downsample(arr, axis=dim).size for dim, arr in enumerate(arrs)))
 
     @property
     def colocate_primal_grid(self):
@@ -240,18 +250,6 @@ class AbstractFieldMonitor(Monitor, ABC):
         description="Toggle whether fields should be colocated to grid cell boundaries (i.e. "
         "primal grid nodes). Default is ``True``.",
     )
-
-    def downsampled_num_cells(self, num_cells: Tuple[int, int, int]) -> Tuple[int, int, int]:
-        """Given a tuple of the number of cells spanned by the monitor along each dimension,
-        return the number of cells one would have after downsampling based on ``interval_space``.
-        """
-        arrs = [np.arange(ncells) for ncells in num_cells]
-        return tuple((self.downsample(arr, axis=dim).size for dim, arr in enumerate(arrs)))
-
-    @property
-    def _interval_space(self):
-        """Downsampling interval."""
-        return self.interval_space
 
     @property
     def colocate_primal_grid(self):
@@ -566,13 +564,16 @@ class ModeSolverMonitor(AbstractModeMonitor):
         return 6 * BYTES_COMPLEX * num_cells * len(self.freqs) * self.mode_spec.num_modes
 
     @property
-    def interval_space(self):
-        """No downsampling is applied to the stored fields."""
-        return (1, 1, 1)
-
-    @property
     def colocate(self):
         """Fields are stored on the Yee grid."""
+        return False
+
+    @property
+    def colocate_primal_grid(self):
+        """Defines whether the monitor colocates field values to the primal grid on the fly during
+        the solver run. Set to True by default, and overwritten where colocation is off, or
+        where it is set by an input argument.
+        """
         return False
 
 

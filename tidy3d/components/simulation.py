@@ -40,7 +40,7 @@ from .viz import plot_params_structure, plot_params_pml, plot_params_override_st
 from .viz import plot_params_pec, plot_params_pmc, plot_params_bloch, plot_sim_3d
 
 from ..version import __version__
-from ..constants import C_0, SECOND, inf
+from ..constants import C_0, SECOND, inf, fp_eps
 from ..exceptions import Tidy3dKeyError, SetupError, ValidationError, Tidy3dError
 from ..log import log
 from ..updater import Updater
@@ -994,7 +994,7 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
             )
 
     def _validate_monitor_size(self) -> None:
-        """Ensures the monitors arent storing too much data before simulation is uploaded."""
+        """Ensures the monitors aren't storing too much data before simulation is uploaded."""
 
         total_size_gb = 0
         with log as consolidated_logger:
@@ -1024,11 +1024,9 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
         data_size = {}
         for monitor in self.monitors:
             name = monitor.name
-            monitor_inds = grid.discretize_inds(monitor, extend=True)
-            num_cells = [inds[1] - inds[0] for inds in monitor_inds]
+            num_cells = self.discretize_monitor(monitor).num_cells
             # take monitor downsampling into account
-            if isinstance(monitor, AbstractFieldMonitor):
-                num_cells = monitor.downsampled_num_cells(num_cells)
+            num_cells = monitor.downsampled_num_cells(num_cells)
             num_cells = np.prod(num_cells)
             monitor_size = monitor.storage_size(num_cells=num_cells, tmesh=tmesh)
             data_size[name] = float(monitor_size)
@@ -2546,30 +2544,30 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
 
         return Box.from_bounds(bmin_new, bmax_new)
 
-    def _discretize_grid(self, box: Box, grid: Grid, snap_zero_dim: bool = False, **kwargs) -> Grid:
-        """Grid containing only cells that intersect with a :class:`Box`.
+    def _subgrid(self, span_inds: np.ndarray, grid: Grid = None):
+        """Take a subgrid of the simulation grid with cell span defined by ``span_inds`` along the
+        three dimensions. Optionally, a grid different from the simulation grid can be provided.
+        The ``span_inds`` can also extend beyond the grid, in which case the grid is padded based
+        on the boundary conditions of the simulation along the different dimensions."""
 
-        As opposed to ``Simulation.discretize``, this function operates on a ``grid``
-        which may not be the grid of the simulation.
-        """
-        if not self.intersects(box):
-            log.error(f"Box {box} is outside simulation, cannot discretize")
+        if not grid:
+            grid = self.grid
 
-        span_inds = grid.discretize_inds(box, **kwargs)
         boundary_dict = {}
         for idim, (dim, periodic) in enumerate(zip("xyz", self._periodic)):
             ind_beg, ind_end = span_inds[idim]
             # ind_end + 1 because we are selecting cell boundaries not cells
             boundary_dict[dim] = grid.extended_subspace(idim, ind_beg, ind_end + 1, periodic)
+        return Grid(boundaries=Coords(**boundary_dict))
 
-        grid = Grid(boundaries=Coords(**boundary_dict))
-
-        # Overwrite with zero dimension snapped, if requested
-        if snap_zero_dim:
-            grid = grid.snap_to_box_zero_dim(box)
-            grid = grid.snap_to_box_zero_dim(self)
-
-        return grid
+    def _snap_zero_dim(self, grid: Grid):
+        """Snap a grid to the simulation center along any dimension along which simulation is
+        effectively 0D, defined as having a single pixel. This is more general than just checking
+        size = 0."""
+        size_snapped = [
+            size if num_cells > 1 else 0 for num_cells, size in zip(self.grid.num_cells, self.size)
+        ]
+        return grid.snap_to_box_zero_dim(Box(center=self.center, size=size_snapped))
 
     @cached_property
     def _periodic(self) -> Tuple[bool, bool, bool]:
@@ -2583,26 +2581,66 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
             periodic.append(all(isinstance(bcs, (Periodic, BlochBoundary)) for bcs in bcs_1d))
         return periodic
 
-    def discretize(self, box: Box, snap_zero_dim: bool = False, **kwargs) -> Grid:
+    def _discretize_grid(self, box: Box, grid: Grid, extend: bool = False) -> Grid:
+        """Grid containing only cells that intersect with a :class:`Box`.
+
+        As opposed to ``Simulation.discretize``, this function operates on a ``grid``
+        which may not be the grid of the simulation.
+        """
+
+        if not self.intersects(box):
+            log.error(f"Box {box} is outside simulation, cannot discretize.")
+
+        span_inds = grid.discretize_inds(box=box, extend=extend)
+        return self._subgrid(span_inds=span_inds, grid=grid)
+
+    def _discretize_inds_monitor(self, monitor: Monitor):
+        """Start and stopping indexes for the cells where data needs to be recorded to fully cover
+        a ``monitor``. This is used during the solver run. The final grid on which a monitor data
+        lives is computed in ``discretize_monitor``, with the difference being that 0-sized
+        dimensions of the monitor or the simulation are snapped in post-processing."""
+
+        # Expand monitor size slightly to break numerical precision in favor of always having
+        # enough data to span the full monitor.
+        expand_size = [size + fp_eps if size > fp_eps else size for size in monitor.size]
+        box_expanded = Box(center=monitor.center, size=expand_size)
+        # Discretize without extension for now
+        span_inds = np.array(self.grid.discretize_inds(box_expanded, extend=False))
+
+        # Now add extensions, which are specific for monitors and are determined such that data
+        # colocated to grid boundaries can be interpolated anywhere inside the monitor.
+        # We always need to expand on the right.
+        span_inds[:, 1] += 1
+        # Non-colocating monitors also need to expand on the left.
+        if not monitor.colocate_primal_grid:
+            span_inds[:, 0] -= 1
+        return span_inds
+
+    def discretize_monitor(self, monitor: Monitor) -> Grid:
+        """Grid on which monitor data corresponding to a given monitor will be computed."""
+        span_inds = self._discretize_inds_monitor(monitor)
+        grid_snapped = self._subgrid(span_inds=span_inds).snap_to_box_zero_dim(monitor)
+        grid_snapped = self._snap_zero_dim(grid=grid_snapped)
+        return grid_snapped
+
+    def discretize(self, box: Box, extend: bool = False) -> Grid:
         """Grid containing only cells that intersect with a :class:`.Box`.
 
         Parameters
         ----------
         box : :class:`.Box`
             Rectangular geometry within simulation to discretize.
-        snap_zero_dim : bool
-            If ``True``, and the ``box`` has size zero along a given direction, the ``grid`` is
-            defined to also have a zero-sized cell exactly centered at the ``box`` center. If
-            false, the ``simulation`` grid cell containing the ``box`` center is instead used.
-        kwargs :
-            Extra keyword arguments passed to ``discretize_inds`` method of :class:`.Grid`.
+        extend : bool = False
+            If ``True``, ensure that the returned indexes extend sufficiently in every direction to
+            be able to interpolate any field component at any point within the ``box``, for field
+            components sampled on the Yee grid.
 
         Returns
         -------
         :class:`Grid`
             The FDTD subgrid containing simulation points that intersect with ``box``.
         """
-        return self._discretize_grid(box, self.grid, snap_zero_dim, **kwargs)
+        return self._discretize_grid(box=box, grid=self.grid, extend=extend)
 
     def epsilon(
         self,
