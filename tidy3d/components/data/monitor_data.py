@@ -80,8 +80,10 @@ class AbstractFieldData(MonitorData, AbstractFieldDataset, ABC):
     grid_expanded: Grid = pd.Field(
         None,
         title="Expanded Grid",
-        description=":class:`.Grid` on which the symmetry will be expanded. "
-        "Required only if any of the ``symmetry`` field are non-zero.",
+        description=":class:`.Grid` discretization of the associated monitor in the simulation "
+        "which created the data. The coordinates of the dataset depend on various specifications "
+        "like symmetries, colocation and down-sampling. Required if symmetries are present, as "
+        "well as in order to use some functionalities like the flux property.",
     )
 
     _require_sym_center = required_if_symmetry_present("symmetry_center")
@@ -242,6 +244,10 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
     @property
     def colocation_boundaries(self) -> Coords:
         """Coordinates to be used for colocation of the data to grid boundaries."""
+
+        if not self.grid_expanded:
+            raise DataError("Monitor data requires 'grid_expanded' to be defined in order to "
+                "compute colocation coordinates.")
 
         # Get boundaries from the expanded grid
         grid_bounds = self.grid_expanded.boundaries.to_list

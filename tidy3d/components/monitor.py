@@ -1,6 +1,6 @@
 """Objects that define how data is recorded from simulation."""
 from abc import ABC, abstractmethod
-from typing import Union, Tuple, Literal
+from typing import Union, Tuple
 
 import pydantic
 import numpy as np
@@ -32,12 +32,21 @@ class Monitor(Box, ABC):
         min_length=1,
     )
 
-    interval_space: Literal[((1, 1, 1),)] = pydantic.Field(
-        tuple((1, 1, 1)),
+    interval_space: Tuple[Literal[1], ...] = pydantic.Field(
+        (1, 1, 1),
         title="Spatial interval",
         description="Number of grid step intervals between monitor recordings. If equal to 1, "
-        "there will be no downsampling. If greater than 1, fields will be downsampled "
-        "and automatically colocated. Not all monitors support values different from 1.",
+        "there will be no downsampling. If greater than 1, the step will be applied, but the last "
+        "point of the monitor grid is always included."
+        "Not all monitors support values different from 1.",
+    )
+
+    colocate: Literal[True] = pydantic.Field(
+        True,
+        title="Colocate fields",
+        description="Defines whether fields are colocated to grid cell boundaries (i.e. to the "
+        "primal grid) on-the-fly during a solver run. Can be toggled for field recording monitors "
+        "and is hard-coded for other monitors depending on their specific function.",
     )
 
     @cached_property
@@ -108,14 +117,6 @@ class Monitor(Box, ABC):
         """
         arrs = [np.arange(ncells) for ncells in num_cells]
         return tuple((self.downsample(arr, axis=dim).size for dim, arr in enumerate(arrs)))
-
-    @property
-    def colocate_primal_grid(self):
-        """Defines whether the monitor colocates field values to the primal grid on the fly during
-        the solver run. Set to True by default, and overwritten where colocation is off, or
-        where it is set by an input argument.
-        """
-        return True
 
 
 class FreqMonitor(Monitor, ABC):
@@ -240,8 +241,8 @@ class AbstractFieldMonitor(Monitor, ABC):
         (1, 1, 1),
         title="Spatial interval",
         description="Number of grid step intervals between monitor recordings. If equal to 1, "
-        "there will be no downsampling. If greater than 1, fields will be downsampled "
-        "and automatically colocated.",
+        "there will be no downsampling. If greater than 1, the step will be applied, but the last "
+        "point of the monitor grid is always included.",
     )
 
     colocate: bool = pydantic.Field(
@@ -250,11 +251,6 @@ class AbstractFieldMonitor(Monitor, ABC):
         description="Toggle whether fields should be colocated to grid cell boundaries (i.e. "
         "primal grid nodes). Default is ``True``.",
     )
-
-    @property
-    def colocate_primal_grid(self):
-        """Colocation setting."""
-        return self.colocate
 
 
 class PlanarMonitor(Monitor, ABC):
@@ -385,16 +381,17 @@ class PermittivityMonitor(FreqMonitor):
     ...     name='eps_monitor')
     """
 
+    colocate: Literal[False] = pydantic.Field(
+        False,
+        title="Colocate fields",
+        description="Colocation turned off, since colocated permittivity values do not have a "
+        "physical meaning - they do not correspond to the subpixel-averaged ones.",
+    )
+
     def storage_size(self, num_cells: int, tmesh: ArrayFloat1D) -> int:
         """Size of monitor storage given the number of points after discretization."""
         # stores 3 complex number per grid cell, per frequency
         return BYTES_COMPLEX * num_cells * len(self.freqs) * 3
-
-    @property
-    def colocate_primal_grid(self):
-        """Permittivity monitors do not colocate as interpolating the permittivity is not
-        physically meaningful (it does not match the subpixel averaging scheme)."""
-        return False
 
 
 class SurfaceIntegrationMonitor(Monitor, ABC):
@@ -526,15 +523,18 @@ class ModeMonitor(AbstractModeMonitor):
     ...     name='mode_monitor')
     """
 
+    colocate: Literal[False] = pydantic.Field(
+        False,
+        title="Colocate fields",
+        description="Defines whether fields are colocated to grid cell boundaries (i.e. to the "
+        "primal grid) on-the-fly during a solver run. Can be toggled for field recording monitors "
+        "and is hard-coded for other monitors depending on their specific function.",
+    )
+
     def storage_size(self, num_cells: int, tmesh: int) -> int:
         """Size of monitor storage given the number of points after discretization."""
         # stores 3 complex numbers per frequency, per mode.
         return 3 * BYTES_COMPLEX * len(self.freqs) * self.mode_spec.num_modes
-
-    @property
-    def colocate_primal_grid(self):
-        """Diffraction monitor interpolates fields in post-processing."""
-        return False
 
 
 class ModeSolverMonitor(AbstractModeMonitor):
@@ -559,22 +559,17 @@ class ModeSolverMonitor(AbstractModeMonitor):
         "dimension.",
     )
 
+    colocate: Literal[False] = pydantic.Field(
+        False,
+        title="Colocate fields",
+        description="Defines whether fields are colocated to grid cell boundaries (i.e. to the "
+        "primal grid) on-the-fly during a solver run. Can be toggled for field recording monitors "
+        "and is hard-coded for other monitors depending on their specific function.",
+    )
+
     def storage_size(self, num_cells: int, tmesh: int) -> int:
         """Size of monitor storage given the number of points after discretization."""
         return 6 * BYTES_COMPLEX * num_cells * len(self.freqs) * self.mode_spec.num_modes
-
-    @property
-    def colocate(self):
-        """Fields are stored on the Yee grid."""
-        return False
-
-    @property
-    def colocate_primal_grid(self):
-        """Defines whether the monitor colocates field values to the primal grid on the fly during
-        the solver run. Set to True by default, and overwritten where colocation is off, or
-        where it is set by an input argument.
-        """
-        return False
 
 
 class FieldProjectionSurface(Tidy3dBaseModel):
@@ -892,6 +887,14 @@ class DiffractionMonitor(PlanarMonitor, FreqMonitor):
         "Defaults to ``'+'`` if not provided.",
     )
 
+    colocate: Literal[False] = pydantic.Field(
+        False,
+        title="Colocate fields",
+        description="Defines whether fields are colocated to grid cell boundaries (i.e. to the "
+        "primal grid) on-the-fly during a solver run. Can be toggled for field recording monitors "
+        "and is hard-coded for other monitors depending on their specific function.",
+    )
+
     @pydantic.validator("size", always=True)
     def diffraction_monitor_size(cls, val):
         """Ensure that the monitor is infinite in the transverse direction."""
@@ -906,11 +909,6 @@ class DiffractionMonitor(PlanarMonitor, FreqMonitor):
         """Size of monitor storage given the number of points after discretization."""
         # assumes 1 diffraction order per frequency; actual size will be larger
         return BYTES_COMPLEX * len(self.freqs)
-
-    @property
-    def colocate_primal_grid(self):
-        """Diffraction monitor interpolates fields in post-processing."""
-        return False
 
 
 # types of monitors that are accepted by simulation

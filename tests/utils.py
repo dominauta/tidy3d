@@ -516,7 +516,11 @@ def run_emulated(simulation: Simulation, path: str = SIM_DATA_PATH, **kwargs) ->
         field_mnt = FieldMonitor(**monitor.dict(exclude={"type", "fields"}))
         field_data = make_field_data(monitor=field_mnt)
         return PermittivityData(
-            monitor=monitor, eps_xx=field_data.Ex, eps_yy=field_data.Ey, eps_zz=field_data.Ez
+            monitor=monitor,
+            eps_xx=field_data.Ex,
+            eps_yy=field_data.Ey,
+            eps_zz=field_data.Ez,
+            grid_expanded=simulation.discretize_monitor(monitor),
         )
 
     def make_diff_data(monitor: DiffractionMonitor) -> DiffractionData:

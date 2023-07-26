@@ -2612,7 +2612,7 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
         # We always need to expand on the right.
         span_inds[:, 1] += 1
         # Non-colocating monitors also need to expand on the left.
-        if not monitor.colocate_primal_grid:
+        if not monitor.colocate:
             span_inds[:, 0] -= 1
         return span_inds
 
