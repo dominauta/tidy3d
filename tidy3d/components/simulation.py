@@ -28,9 +28,8 @@ from .structure import Structure
 from .source import SourceType, PlaneWave, GaussianBeam, AstigmaticGaussianBeam, CustomFieldSource
 from .source import CustomCurrentSource, CustomSourceTime
 from .source import TFSF, Source
-from .monitor import MonitorType, Monitor, FreqMonitor
-from .monitor import SurfaceIntegrationMonitor, PermittivityMonitor
-from .monitor import AbstractFieldMonitor, DiffractionMonitor, AbstractFieldProjectionMonitor
+from .monitor import MonitorType, Monitor, FreqMonitor, SurfaceIntegrationMonitor
+from .monitor import PermittivityMonitor, DiffractionMonitor, AbstractFieldProjectionMonitor
 from .data.dataset import Dataset
 from .data.data_array import SpatialDataArray
 from .viz import add_ax_if_none, equal_aspect

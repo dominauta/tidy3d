@@ -256,7 +256,7 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
         # (unless there's a single data point, in which case data has already been snapped).
         # Regardless of colocation, we also drop the last boundary.
         colocate_bounds = []
-        for dim, bounds in enumerate(grid_bounds):
+        for bounds in grid_bounds:
             cbs = bounds[:-1]
             if not self.monitor.colocate and cbs.size > 1:
                 cbs = cbs[1:]

@@ -7,6 +7,7 @@ import tidy3d as td
 
 import tidy3d.plugins.mode.web as msweb
 from tidy3d.plugins.mode import ModeSolver
+from tidy3d.plugins.mode.mode_solver import MODE_MONITOR_NAME
 from tidy3d.plugins.mode.derivatives import create_sfactor_b, create_sfactor_f
 from tidy3d.plugins.mode.solver import compute_modes
 from tidy3d import ScalarFieldDataArray
@@ -169,6 +170,17 @@ def test_compute_modes():
         direction="-",
     )
 
+def compare_colocation(ms):
+    """Compare mode-solver fields with colocation applied during run or post-run."""
+    data_col = ms.solve()
+    ms_nocol = ms.updated_copy(colocate=False)
+    data = ms_nocol.solve()
+    data_at_boundaries = ms_nocol.sim_data.at_boundaries(MODE_MONITOR_NAME)
+
+    for key, field in data_col.field_components.items():
+        for coords1, coords2 in zip(data_at_boundaries[key].coords.values(), field.coords.values()):
+            assert np.allclose(coords1, coords2)
+        assert np.allclose(data_at_boundaries[key], field)
 
 @pytest.mark.parametrize("local", [True, False])
 @responses.activate
@@ -202,7 +214,11 @@ def test_mode_solver_simple(mock_remote_api, local):
         freqs=freqs,
         direction="-",
     )
-    _ = ms.solve() if local else msweb.run(ms)
+
+    if local:
+        compare_colocation(ms)
+    else:
+        _ = msweb.run(ms)
 
     # Testing issue 807 functions
     freq0 = td.C_0 / 1.55
@@ -296,7 +312,8 @@ def test_mode_solver_angle_bend():
     ms = ModeSolver(
         simulation=simulation, plane=plane, mode_spec=mode_spec, freqs=[td.C_0 / 1.0], direction="-"
     )
-    _ = ms.solve()
+    compare_colocation(ms)
+
     # Plot field
     _, ax = plt.subplots(1)
     ms.plot_field("Ex", ax=ax, mode_index=1)
@@ -328,7 +345,7 @@ def test_mode_solver_2D():
     ms = ModeSolver(
         simulation=simulation, plane=PLANE, mode_spec=mode_spec, freqs=[td.C_0 / 1.0], direction="-"
     )
-    _ = ms.solve()
+    compare_colocation(ms)
 
     mode_spec = td.ModeSpec(
         num_modes=3,
@@ -347,7 +364,7 @@ def test_mode_solver_2D():
     ms = ModeSolver(
         simulation=simulation, plane=PLANE, mode_spec=mode_spec, freqs=[td.C_0 / 1.0], direction="+"
     )
-    _ = ms.solve()
+    compare_colocation(ms)
 
     # The simulation and the mode plane are both 0D along the same dimension
     simulation = td.Simulation(
@@ -358,7 +375,7 @@ def test_mode_solver_2D():
         sources=[SRC],
     )
     ms = ModeSolver(simulation=simulation, plane=PLANE, mode_spec=mode_spec, freqs=[td.C_0 / 1.0])
-    _ = ms.solve()
+    compare_colocation(ms)
 
 
 @pytest.mark.parametrize("local", [True, False])

@@ -1,6 +1,6 @@
 """ Simulation Level Data """
 from __future__ import annotations
-from typing import Dict, Callable, Tuple, Literal
+from typing import Dict, Callable, Tuple
 
 import xarray as xr
 import pydantic as pd
@@ -9,7 +9,6 @@ import numpy as np
 from .monitor_data import MonitorDataTypes, MonitorDataType, AbstractFieldData, FieldTimeData
 from ..base import Tidy3dBaseModel
 from ..simulation import Simulation
-from ..grid.grid import Coords
 from ..boundary import BlochBoundary
 from ..source import TFSF
 from ..types import Ax, Axis, annotate_type, FieldVal, PlotScale, ColormapType

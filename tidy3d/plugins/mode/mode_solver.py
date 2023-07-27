@@ -65,6 +65,13 @@ class ModeSolver(Tidy3dBaseModel):
         "dimension.",
     )
 
+    colocate: bool = pydantic.Field(
+        True,
+        title="Colocate fields",
+        description="Toggle whether fields should be colocated to grid cell boundaries (i.e. "
+        "primal grid nodes). Default is ``True``.",
+    )
+
     @pydantic.validator("plane", always=True)
     def is_plane(cls, val):
         """Raise validation error if not planar."""
@@ -103,7 +110,8 @@ class ModeSolver(Tidy3dBaseModel):
         set after the solve."""
         plane_sym = self.simulation.min_sym_box(self.plane)
         monitor = self.to_mode_solver_monitor(name=MODE_MONITOR_NAME)
-        monitor = monitor.updated_copy(center=plane_sym.center, size=plane_sym.size)
+        monitor = monitor.updated_copy(colocate=False, center=plane_sym.center, size=plane_sym.size)
+        # pylint:disable=protected-access
         span_inds = self.simulation._discretize_inds_monitor(monitor)
 
         # Remove extension along monitor normal
@@ -121,6 +129,7 @@ class ModeSolver(Tidy3dBaseModel):
             if sym != 0:
                 span_inds[plane_inds[dim], 0] += 2
 
+        # pylint:disable=protected-access
         return self.simulation._subgrid(span_inds=span_inds)
 
     def solve(self) -> ModeSolverData:
@@ -209,9 +218,10 @@ class ModeSolver(Tidy3dBaseModel):
         # Construct and add all the data for the fields
         # Snap the solver grid to plane normal and simulation 0-sized dims if any
         grid_snapped = self._solver_grid.snap_to_box_zero_dim(self.plane)
+        # pylint:disable=protected-access
         grid_snapped = self.simulation._snap_zero_dim(grid_snapped)
 
-        # Construct the field data
+        # Construct the field data on Yee grid
         for field_name in ("Ex", "Ey", "Ez", "Hx", "Hy", "Hz"):
             xyz_coords = grid_snapped[field_name].to_list
             scalar_field_data = ScalarModeFieldDataArray(
@@ -235,11 +245,11 @@ class ModeSolver(Tidy3dBaseModel):
             direction=self.direction,
         )
 
-        # make mode solver data
+        # make mode solver data on the Yee grid for now
         mode_solver_monitor = self.to_mode_solver_monitor(name=MODE_MONITOR_NAME)
         grid_expanded = self.simulation.discretize_monitor(mode_solver_monitor)
         mode_solver_data = ModeSolverData(
-            monitor=mode_solver_monitor,
+            monitor=mode_solver_monitor.updated_copy(colocate=False),
             symmetry=self.simulation.symmetry,
             symmetry_center=self.simulation.center,
             grid_expanded=grid_expanded,
@@ -249,6 +259,28 @@ class ModeSolver(Tidy3dBaseModel):
             **data_dict,
         )
         self._field_decay_warning(mode_solver_data.symmetry_expanded_copy)
+
+        # Colocate to grid boundaries if requested
+        if self.colocate:
+            # Get colocation coordinates in the solver plane
+            _, plane_dims = self.plane.pop_axis("xyz", self.normal_axis)
+            colocate_coords = {}
+            for dim, sym in zip(plane_dims, self.solver_symmetry):
+                coords = grid_snapped.boundaries.to_dict[dim]
+                if len(coords) > 2:
+                    if sym == 0:
+                        colocate_coords[dim] = coords[1:-1]
+                    else:
+                        colocate_coords[dim] = coords[:-1]
+            # Colocate to new coordinates using the previously created data
+            data_dict_colocated = {}
+            for key, field in mode_solver_data.symmetry_expanded_copy.field_components.items():
+                data_dict_colocated[key] = field.interp(**colocate_coords)
+            # Update data
+            mode_solver_data = mode_solver_data.updated_copy(
+                monitor=mode_solver_monitor,
+                **data_dict_colocated
+            )
 
         # normalize modes
         scaling = np.sqrt(np.abs(mode_solver_data.flux))
@@ -296,7 +328,6 @@ class ModeSolver(Tidy3dBaseModel):
         eps_tensor = [
             self.simulation.epsilon_on_grid(self._solver_grid, key, freq) for key in eps_keys
         ]
-        print(self._solver_grid)
         return np.stack(eps_tensor, axis=0)
 
     def _solver_eps(self, freq: float) -> ArrayComplex4D:
@@ -583,6 +614,7 @@ class ModeSolver(Tidy3dBaseModel):
             mode_spec=self.mode_spec,
             freqs=self.freqs,
             direction=self.direction,
+            colocate=self.colocate,
             name=name,
         )
 

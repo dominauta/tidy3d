@@ -559,12 +559,11 @@ class ModeSolverMonitor(AbstractModeMonitor):
         "dimension.",
     )
 
-    colocate: Literal[False] = pydantic.Field(
-        False,
+    colocate: bool = pydantic.Field(
+        True,
         title="Colocate fields",
-        description="Defines whether fields are colocated to grid cell boundaries (i.e. to the "
-        "primal grid) on-the-fly during a solver run. Can be toggled for field recording monitors "
-        "and is hard-coded for other monitors depending on their specific function.",
+        description="Toggle whether fields should be colocated to grid cell boundaries (i.e. "
+        "primal grid nodes). Default is ``True``.",
     )
 
     def storage_size(self, num_cells: int, tmesh: int) -> int:
