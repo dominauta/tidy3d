@@ -278,8 +278,7 @@ class ModeSolver(Tidy3dBaseModel):
                 data_dict_colocated[key] = field.interp(**colocate_coords)
             # Update data
             mode_solver_data = mode_solver_data.updated_copy(
-                monitor=mode_solver_monitor,
-                **data_dict_colocated
+                monitor=mode_solver_monitor, **data_dict_colocated
             )
 
         # normalize modes

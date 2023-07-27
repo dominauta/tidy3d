@@ -170,6 +170,7 @@ def test_compute_modes():
         direction="-",
     )
 
+
 def compare_colocation(ms):
     """Compare mode-solver fields with colocation applied during run or post-run."""
     data_col = ms.solve()
@@ -181,6 +182,7 @@ def compare_colocation(ms):
         for coords1, coords2 in zip(data_at_boundaries[key].coords.values(), field.coords.values()):
             assert np.allclose(coords1, coords2)
         assert np.allclose(data_at_boundaries[key], field)
+
 
 @pytest.mark.parametrize("local", [True, False])
 @responses.activate

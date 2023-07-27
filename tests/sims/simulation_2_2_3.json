@@ -14,7 +14,6 @@
     "medium": {
         "name": null,
         "frequency_range": null,
-        "allow_gain": false,
         "type": "Medium",
         "permittivity": 1.0,
         "conductivity": 0.0
@@ -44,7 +43,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "Medium",
                 "permittivity": 2.0,
                 "conductivity": 0.0
@@ -69,7 +67,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "Medium",
                 "permittivity": 1.0,
                 "conductivity": 3.0
@@ -90,7 +87,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "Sellmeier",
                 "coeffs": [
                     [
@@ -123,7 +119,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "Lorentz",
                 "eps_inf": 2.0,
                 "coeffs": [
@@ -154,7 +149,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "Debye",
                 "eps_inf": 2.0,
                 "coeffs": [
@@ -184,7 +178,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "Drude",
                 "eps_inf": 2.0,
                 "coeffs": [
@@ -193,67 +186,6 @@
                         3.0
                     ]
                 ]
-            }
-        },
-        {
-            "geometry": {
-                "type": "Box",
-                "center": [
-                    -1.0,
-                    0.0,
-                    0.0
-                ],
-                "size": [
-                    1.0,
-                    0.0,
-                    1.0
-                ]
-            },
-            "name": null,
-            "type": "Structure",
-            "medium": {
-                "name": null,
-                "frequency_range": null,
-                "allow_gain": false,
-                "type": "Medium2D",
-                "ss": {
-                    "name": null,
-                    "frequency_range": null,
-                    "allow_gain": false,
-                    "type": "PoleResidue",
-                    "eps_inf": 1.0,
-                    "poles": [
-                        [
-                            {
-                                "real": 0.0,
-                                "imag": 0.0
-                            },
-                            {
-                                "real": 254117040158918.28,
-                                "imag": 0.0
-                            }
-                        ]
-                    ]
-                },
-                "tt": {
-                    "name": null,
-                    "frequency_range": null,
-                    "allow_gain": false,
-                    "type": "PoleResidue",
-                    "eps_inf": 1.0,
-                    "poles": [
-                        [
-                            {
-                                "real": 0.0,
-                                "imag": 0.0
-                            },
-                            {
-                                "real": 254117040158918.28,
-                                "imag": 0.0
-                            }
-                        ]
-                    ]
-                }
             }
         },
         {
@@ -280,7 +212,6 @@
             "medium": {
                 "name": "PEC",
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "PECMedium"
             }
         },
@@ -303,12 +234,10 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": null,
                 "type": "AnisotropicMedium",
                 "xx": {
                     "name": null,
                     "frequency_range": null,
-                    "allow_gain": false,
                     "type": "Medium",
                     "permittivity": 1.0,
                     "conductivity": 0.0
@@ -316,7 +245,6 @@
                 "yy": {
                     "name": null,
                     "frequency_range": null,
-                    "allow_gain": false,
                     "type": "Medium",
                     "permittivity": 2.0,
                     "conductivity": 0.0
@@ -324,7 +252,6 @@
                 "zz": {
                     "name": null,
                     "frequency_range": null,
-                    "allow_gain": false,
                     "type": "Medium",
                     "permittivity": 3.0,
                     "conductivity": 0.0
@@ -362,7 +289,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "PoleResidue",
                 "eps_inf": 1.0,
                 "poles": [
@@ -392,7 +318,6 @@
             "medium": {
                 "name": null,
                 "frequency_range": null,
-                "allow_gain": false,
                 "type": "Medium",
                 "permittivity": 5.0,
                 "conductivity": 0.0
@@ -611,37 +536,6 @@
             }
         },
         {
-            "type": "CustomCurrentSource",
-            "center": [
-                0.0,
-                1.0,
-                2.0
-            ],
-            "size": [
-                2.0,
-                2.0,
-                0.0
-            ],
-            "source_time": {
-                "amplitude": 1.0,
-                "phase": 0.0,
-                "type": "GaussianPulse",
-                "freq0": 200000000000000.0,
-                "fwidth": 40000000000000.0,
-                "offset": 5.0
-            },
-            "name": null,
-            "current_dataset": {
-                "type": "FieldDataset",
-                "Ex": "ScalarFieldDataArray",
-                "Ey": null,
-                "Ez": null,
-                "Hx": null,
-                "Hy": null,
-                "Hz": null
-            }
-        },
-        {
             "type": "TFSF",
             "center": [
                 1.0,
@@ -759,7 +653,7 @@
                 1,
                 1
             ],
-            "colocate": true
+            "colocate": false
         },
         {
             "type": "FieldTimeMonitor",
@@ -790,7 +684,7 @@
                 1,
                 1
             ],
-            "colocate": true
+            "colocate": false
         },
         {
             "type": "FluxMonitor",
@@ -1476,7 +1370,6 @@
                 "medium": {
                     "name": null,
                     "frequency_range": null,
-                    "allow_gain": false,
                     "type": "Medium",
                     "permittivity": 2.0,
                     "conductivity": 0.0

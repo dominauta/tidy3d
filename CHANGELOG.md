@@ -79,6 +79,13 @@ that the fields match exactly except for a ``pi`` phase shift. This interpretati
 - `ArrayLike` validation properly fails with `None` or `nan` contents.
 - Apply finite grid correction to the fields when calculating the Poynting vector from 2D monitors.
 - `JaxCustomMedium` properly handles complex-valued permittivity.
+- `colocate` introduced as an argument to `ModeSolver` and a Field in `ModeSolverMonitor`, set to True by default.
+
+### Changed
+- `FieldTimeMonitor`-s and `FieldMonitor`-s that have colocate=True return fields colocated to the grid boundaries rather than centers. In both, `colocate` is now set to `True` by default.
+
+### Fixed
+
 
 ## [2.3.0] - 2023-6-30
 
