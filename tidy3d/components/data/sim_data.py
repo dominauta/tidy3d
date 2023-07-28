@@ -215,11 +215,12 @@ class SimulationData(Tidy3dBaseModel):
             the Yee grid.
         """
 
-        return self._at_centers(self.load_field_monitor(field_monitor_name))
+        monitor_data = self.load_field_monitor(field_monitor_name)
+        return monitor_data.at_coords(monitor_data.colocation_centers)
 
-    def _at_centers(self, monitor_data: xr.Dataset) -> xr.Dataset:
-        """return xarray.Dataset representation of field monitor data
-        co-located at Yee cell centers.
+    def _at_boundaries(self, monitor_data: xr.Dataset) -> xr.Dataset:
+        """Return xarray.Dataset representation of field monitor data colocated at Yee cell
+        boundaries.
 
         Parameters
         ----------
@@ -229,12 +230,18 @@ class SimulationData(Tidy3dBaseModel):
         Returns
         -------
         xarray.Dataset
-            Dataset containing all of the fields in the data
-            interpolated to center locations on Yee grid.
+            Dataset containing all of the fields in the data interpolated to boundary locations on
+            the Yee grid.
         """
 
-        # colocate to monitor grid centers
-        return monitor_data.at_coords(monitor_data.colocation_centers)
+        if monitor_data.monitor.colocate:
+            # TODO: this still errors if monitor_data.colocate is allowed to be ``True`` in the
+            # adjoint plugin, and the monitor data is tracked in a gradient computation. It seems
+            # interpolating does something to the arrays that makes the JAX chain work.
+            return monitor_data.package_colocate_results(monitor_data.field_components)
+
+        # colocate to monitor grid boundaries
+        return monitor_data.at_coords(monitor_data.colocation_boundaries)
 
     def at_boundaries(self, field_monitor_name: str) -> xr.Dataset:
         """Return xarray.Dataset representation of field monitor data colocated at Yee cell
@@ -252,89 +259,8 @@ class SimulationData(Tidy3dBaseModel):
             the Yee grid.
         """
 
-        # get the data
-        monitor_data = self.load_field_monitor(field_monitor_name)
-
-        if monitor_data.monitor.colocate:
-            # TODO: this still errors if monitor_data.colocate is allowed to be ``True`` in the
-            # adjoint plugin, and the monitor data is tracked in a gradient computatin. It seems
-            # interpolating does something to the arrays that makes the JAX chain work.
-            return monitor_data.package_colocate_results(monitor_data.field_components)
-
         # colocate to monitor grid boundaries
-        return monitor_data.at_coords(monitor_data.colocation_boundaries)
-
-    # def at_centers(self, field_monitor_name: str) -> xr.Dataset:
-    #     """Return xarray.Dataset representation of field monitor data colocated at Yee cell centers.
-
-
-    #     Parameters
-    #     ----------
-    #     field_monitor_name : str
-    #         Name of field monitor used in the original :class:`Simulation`.
-
-
-    #     Returns
-    #     -------
-    #     xarray.Dataset
-    #         Dataset containing all of the fields in the data interpolated to center locations on
-    #         the Yee grid.
-    #     """
-
-
-    #     # get the data
-    #     monitor_data = self.load_field_monitor(field_monitor_name)
-
-
-    #     # discretize the monitor and get center locations
-    #     return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "centers"))
-
-
-    # def at_boundaries(self, field_monitor_name: str) -> xr.Dataset:
-    #     """Return xarray.Dataset representation of field monitor data colocated at Yee cell
-    #     boundaries.
-
-
-    #     Parameters
-    #     ----------
-    #     field_monitor_name : str
-    #         Name of field monitor used in the original :class:`Simulation`.
-
-
-    #     Returns
-    #     -------
-    #     xarray.Dataset
-    #         Dataset containing all of the fields in the data interpolated to boundary locations on
-    #         the Yee grid.
-    #     """
-
-
-    #     # get the data
-    #     monitor_data = self.load_field_monitor(field_monitor_name)
-
-
-    #     # discretize the monitor and get center locations
-    #     return monitor_data.at_coords(self._colocation_coords(monitor_data.monitor, "boundaries"))
-
-
-    def _colocation_coords(self, monitor, location=Literal["centers", "boundaries"]) -> Coords:
-        """Coordinates at grid centers or grid boundaries to be used when colocating data."""
-
-
-        # Get monitor grid coordinates at the requested location
-        expand_size = [size - 1e-8 if size > 1e-8 else size for size in monitor.size]
-        monitor = monitor.copy(update=dict(size=expand_size))
-        mnt_grid = self.simulation.discretize(monitor, extend=False)
-        coords = {}
-        for dim, (key, coos) in enumerate(mnt_grid[location].to_dict.items()):
-            if monitor.size[dim] == 0:
-                # Colocate to exact monitor location along zero-sized dimension
-                coords[key] = np.array([monitor.center[dim]])
-            else:
-                coords[key] = coos
-
-
-        return Coords(**coords)
+        return self._at_boundaries(self.load_field_monitor(field_monitor_name))
 
     # pylint: disable=too-many-locals
     def get_poynting_vector(self, field_monitor_name: str) -> xr.Dataset:
@@ -359,7 +285,7 @@ class SimulationData(Tidy3dBaseModel):
         """
         # Fields from 2D monitors need a correction factor
         mon_data = self.load_field_monitor(field_monitor_name).grid_corrected_copy
-        field_dataset = self._at_centers(mon_data)
+        field_dataset = self._at_boundaries(mon_data)
 
         time_domain = isinstance(self.monitor_data[field_monitor_name], FieldTimeData)
 

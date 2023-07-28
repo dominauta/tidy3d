@@ -1062,6 +1062,12 @@
                 0.0
             ],
             "name": "field",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "freqs": [
                 150000000000000.0,
                 200000000000000.0
@@ -1074,13 +1080,7 @@
             },
             "fields": [
                 "Ex"
-            ],
-            "interval_space": [
-                1,
-                1,
-                1
-            ],
-            "colocate": false
+            ]
         },
         {
             "type": "FieldTimeMonitor",
@@ -1095,6 +1095,12 @@
                 0.0
             ],
             "name": "field_time",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "start": 0.0,
             "stop": null,
             "interval": 100,
@@ -1105,13 +1111,7 @@
                 "Hx",
                 "Hy",
                 "Hz"
-            ],
-            "interval_space": [
-                1,
-                1,
-                1
-            ],
-            "colocate": false
+            ]
         },
         {
             "type": "FluxMonitor",
@@ -1126,6 +1126,12 @@
                 0.0
             ],
             "name": "flux",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "freqs": [
                 200000000000000.0,
                 250000000000000.0
@@ -1152,6 +1158,12 @@
                 0.0
             ],
             "name": "flux_time",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "start": 0.0,
             "stop": null,
             "interval": 1,
@@ -1171,6 +1183,12 @@
                 0.1
             ],
             "name": "eps",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": false,
             "freqs": [
                 100000000000000.0
             ],
@@ -1194,6 +1212,12 @@
                 0.0
             ],
             "name": "mode",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": false,
             "freqs": [
                 200000000000000.0,
                 250000000000000.0
@@ -1235,6 +1259,12 @@
                 0.0
             ],
             "name": "mode_solver",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "freqs": [
                 200000000000000.0,
                 250000000000000.0
@@ -1277,6 +1307,12 @@
                 2.0
             ],
             "name": "proj_angle",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "freqs": [
                 250000000000000.0,
                 300000000000000.0
@@ -1416,6 +1452,12 @@
                 2.0
             ],
             "name": "proj_cartesian",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "freqs": [
                 250000000000000.0,
                 300000000000000.0
@@ -1462,6 +1504,12 @@
                 2.0
             ],
             "name": "proj_kspace",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "freqs": [
                 250000000000000.0,
                 300000000000000.0
@@ -1505,6 +1553,12 @@
                 2.0
             ],
             "name": "proj_angle_exact",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": true,
             "freqs": [
                 250000000000000.0,
                 300000000000000.0
@@ -1644,6 +1698,12 @@
                 "Infinity"
             ],
             "name": "diffraction",
+            "interval_space": [
+                1,
+                1,
+                1
+            ],
+            "colocate": false,
             "freqs": [
                 100000000000000.0,
                 200000000000000.0

@@ -306,8 +306,9 @@ class CustomSourceTime(Pulse):
 
     Example
     -------
-    >>> cst = td.CustomSourceTime.from_values(freq0=1, fwidth=0.1,
-    >>>     values=np.linspace(0, 9, 10), dt=0.1)
+    >>> cst = CustomSourceTime.from_values(freq0=1, fwidth=0.1,
+    ...     values=np.linspace(0, 9, 10), dt=0.1)
+
     """
 
     source_time_dataset: Optional[TimeDataset] = pydantic.Field(

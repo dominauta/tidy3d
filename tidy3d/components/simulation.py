@@ -1019,7 +1019,6 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
     def monitors_data_size(self) -> Dict[str, float]:
         """Dictionary mapping monitor names to their estimated storage size in bytes."""
         tmesh = self.tmesh
-        grid = self.grid
         data_size = {}
         for monitor in self.monitors:
             name = monitor.name
