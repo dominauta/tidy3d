@@ -521,12 +521,12 @@ class Grid(Tidy3dBaseModel):
 
         Parameters
         ----------
-        box : Box
+        box : :class:`Box`
             Box to use for the zero dim check.
 
         Returns
         -------
-        Grid
+        class:`Grid`
             Snapped copy of the grid.
         """
 

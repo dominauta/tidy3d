@@ -6,9 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `colocate` introduced as an argument to `ModeSolver` and a Field in `ModeSolverMonitor`, set to True by default.
 
 ### Changed
 - `nyquist_step` also taking the frequency range of frequency-domain monitors into account.
+- `FieldTimeMonitor`-s and `FieldMonitor`-s that have `colocate=True` return fields colocated to the grid boundaries rather than centers.
+- In these monitors, `colocate` is now set to `True` by default.
+- Field colocation for computations like flux, Poynting, and modal overlap also happen to cell boundaries rather than centers. The effect on final results
+should be imperceptible as verified by a large number of backend tests and our online examples.
+
 
 ### Fixed
 
@@ -79,12 +85,6 @@ that the fields match exactly except for a ``pi`` phase shift. This interpretati
 - `ArrayLike` validation properly fails with `None` or `nan` contents.
 - Apply finite grid correction to the fields when calculating the Poynting vector from 2D monitors.
 - `JaxCustomMedium` properly handles complex-valued permittivity.
-- `colocate` introduced as an argument to `ModeSolver` and a Field in `ModeSolverMonitor`, set to True by default.
-
-### Changed
-- `FieldTimeMonitor`-s and `FieldMonitor`-s that have colocate=True return fields colocated to the grid boundaries rather than centers. In both, `colocate` is now set to `True` by default.
-
-### Fixed
 
 
 ## [2.3.0] - 2023-6-30

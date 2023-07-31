@@ -158,7 +158,7 @@ class AbstractFieldData(MonitorData, AbstractFieldDataset, ABC):
 
         Parameters
         ----------
-        coords : Coords
+        coords : :class:`Coords`
             Coordinates in x, y and z to colocate to.
 
         Returns
@@ -251,19 +251,19 @@ class ElectromagneticFieldData(AbstractFieldData, ElectromagneticFieldDataset, A
             )
 
         # Get boundaries from the expanded grid
-        grid_bounds = self.grid_expanded.boundaries.to_list
+        grid_bounds = self.grid_expanded.boundaries.to_dict
 
         # Non-colocating monitors can only colocate starting from the first boundary
         # (unless there's a single data point, in which case data has already been snapped).
         # Regardless of colocation, we also drop the last boundary.
-        colocate_bounds = []
-        for bounds in grid_bounds:
+        colocate_bounds = {}
+        for dim, bounds in grid_bounds.items():
             cbs = bounds[:-1]
             if not self.monitor.colocate and cbs.size > 1:
                 cbs = cbs[1:]
-            colocate_bounds.append(cbs)
+            colocate_bounds[dim] = cbs
 
-        return Coords(**dict(zip("xyz", colocate_bounds)))
+        return Coords(**colocate_bounds)
 
     @property
     def colocation_centers(self) -> Coords:

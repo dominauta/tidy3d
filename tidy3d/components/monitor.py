@@ -32,12 +32,12 @@ class Monitor(Box, ABC):
         min_length=1,
     )
 
-    interval_space: Tuple[Literal[1], ...] = pydantic.Field(
+    interval_space: Tuple[Literal[1], Literal[1], Literal[1]] = pydantic.Field(
         (1, 1, 1),
         title="Spatial interval",
         description="Number of grid step intervals between monitor recordings. If equal to 1, "
         "there will be no downsampling. If greater than 1, the step will be applied, but the last "
-        "point of the monitor grid is always included."
+        "point of the monitor grid is always included. "
         "Not all monitors support values different from 1.",
     )
 
