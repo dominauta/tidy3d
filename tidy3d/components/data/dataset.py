@@ -17,6 +17,7 @@ from .data_array import TimeDataArray
 from ..base import Tidy3dBaseModel
 from ..types import Axis
 from ...exceptions import DataError
+from ...log import log
 
 
 class Dataset(Tidy3dBaseModel, ABC):
@@ -72,6 +73,18 @@ class AbstractFieldDataset(Dataset, ABC):
         it is important that the fields are colocated at the same spatial locations.
         Be sure to apply this method to your field data in those cases.
         """
+
+        try:
+            if self.monitor.colocate:
+                log.warning(
+                    "Colocating data that has already been colocated during the solver "
+                    "run. For most accurate results when colocating to custom coordinates set "
+                    "'Monitor.colocate' to 'False' to use the raw data on the Yee grid "
+                    "and avoid double interpolation."
+                )
+        except AttributeError:
+            # Dataset doesn't contain a monitor
+            pass
 
         # convert supplied coordinates to array and assign string mapping to them
         supplied_coord_map = {k: np.array(v) for k, v in zip("xyz", (x, y, z)) if v is not None}
