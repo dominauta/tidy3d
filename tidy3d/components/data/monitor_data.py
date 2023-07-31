@@ -85,6 +85,16 @@ class AbstractFieldData(MonitorData, AbstractFieldDataset, ABC):
         "well as in order to use some functionalities like getting poynting and flux.",
     )
 
+    @pd.validator("grid_expanded", always=True)
+    def warn_missing_grid_expanded(cls, val):
+        """If ``colocate`` not provided, set to true, but warn that behavior has changed."""
+        if val is None:
+            log.warning(
+                "Monitor data requires 'grid_expanded' to be defined to compute values like "
+                "flux, Poynting and dot product with other data."
+            )
+        return val
+
     _require_sym_center = required_if_symmetry_present("symmetry_center")
     _require_grid_expanded = required_if_symmetry_present("grid_expanded")
 
@@ -686,16 +696,17 @@ class FieldData(FieldDataset, ElectromagneticFieldData):
     Example
     -------
     >>> from tidy3d import ScalarFieldDataArray
-    >>> x = [-1,1]
-    >>> y = [-2,0,2]
-    >>> z = [-3,-1,1,3]
+    >>> x = [-1,1,3]
+    >>> y = [-2,0,2,4]
+    >>> z = [-3,-1,1,3,5]
     >>> f = [2e14, 3e14]
-    >>> coords = dict(x=x, y=y, z=z, f=f)
+    >>> coords = dict(x=x[:-1], y=y[:-1], z=z[:-1], f=f)
+    >>> grid = Grid(boundaries=Coords(x=x, y=y, z=z))
     >>> scalar_field = ScalarFieldDataArray((1+1j) * np.random.random((2,3,4,2)), coords=coords)
     >>> monitor = FieldMonitor(
     ...     size=(2,4,6), freqs=[2e14, 3e14], name='field', fields=['Ex', 'Hz'], colocate=True
     ... )
-    >>> data = FieldData(monitor=monitor, Ex=scalar_field, Hz=scalar_field)
+    >>> data = FieldData(monitor=monitor, Ex=scalar_field, Hz=scalar_field, grid_expanded=grid)
     """
 
     monitor: FieldMonitor = pd.Field(
@@ -759,16 +770,17 @@ class FieldTimeData(FieldTimeDataset, ElectromagneticFieldData):
     Example
     -------
     >>> from tidy3d import ScalarFieldTimeDataArray
-    >>> x = [-1,1]
-    >>> y = [-2,0,2]
-    >>> z = [-3,-1,1,3]
+    >>> x = [-1,1,3]
+    >>> y = [-2,0,2,4]
+    >>> z = [-3,-1,1,3,5]
     >>> t = [0, 1e-12, 2e-12]
-    >>> coords = dict(x=x, y=y, z=z, t=t)
+    >>> coords = dict(x=x[:-1], y=y[:-1], z=z[:-1], t=t)
+    >>> grid = Grid(boundaries=Coords(x=x, y=y, z=z))
     >>> scalar_field = ScalarFieldTimeDataArray(np.random.random((2,3,4,3)), coords=coords)
     >>> monitor = FieldTimeMonitor(
     ...     size=(2,4,6), interval=100, name='field', fields=['Ex', 'Hz'], colocate=True
     ... )
-    >>> data = FieldTimeData(monitor=monitor, Ex=scalar_field, Hz=scalar_field)
+    >>> data = FieldTimeData(monitor=monitor, Ex=scalar_field, Hz=scalar_field, grid_expanded=grid)
     """
 
     monitor: FieldTimeMonitor = pd.Field(
@@ -826,12 +838,13 @@ class ModeSolverData(ModeSolverDataset, ElectromagneticFieldData):
     -------
     >>> from tidy3d import ModeSpec
     >>> from tidy3d import ScalarModeFieldDataArray, ModeIndexDataArray
-    >>> x = [-1,1]
-    >>> y = [0]
-    >>> z = [-3,-1,1,3]
+    >>> x = [-1,1,3]
+    >>> y = [-2,0]
+    >>> z = [-3,-1,1,3,5]
     >>> f = [2e14, 3e14]
     >>> mode_index = np.arange(5)
-    >>> field_coords = dict(x=x, y=y, z=z, f=f, mode_index=mode_index)
+    >>> grid = Grid(boundaries=Coords(x=x, y=y, z=z))
+    >>> field_coords = dict(x=x[:-1], y=y[:-1], z=z[:-1], f=f, mode_index=mode_index)
     >>> field = ScalarModeFieldDataArray((1+1j)*np.random.random((2,1,4,2,5)), coords=field_coords)
     >>> index_coords = dict(f=f, mode_index=mode_index)
     >>> index_data = ModeIndexDataArray((1+1j) * np.random.random((2,5)), coords=index_coords)
@@ -849,7 +862,8 @@ class ModeSolverData(ModeSolverDataset, ElectromagneticFieldData):
     ...     Hx=field,
     ...     Hy=field,
     ...     Hz=field,
-    ...     n_complex=index_data
+    ...     n_complex=index_data,
+    ...     grid_expanded=grid
     ... )
     """
 
@@ -943,7 +957,7 @@ class ModeSolverData(ModeSolverDataset, ElectromagneticFieldData):
                 # Check for discontinuities and show warning if any
                 for mode_ind in list(np.nonzero(overlap[freq_id, :] < overlap_thresh)[0]):
                     log.warning(
-                        f"WARNING: Mode '{mode_ind}' appears to undergo a discontinuous change "
+                        f"Mode '{mode_ind}' appears to undergo a discontinuous change "
                         f"between frequencies '{self.monitor.freqs[freq_id]}' "
                         f"and '{self.monitor.freqs[freq_id - step]}' "
                         f"(overlap: '{overlap[freq_id, mode_ind]:.2f}')."
@@ -1160,14 +1174,17 @@ class PermittivityData(PermittivityDataset, AbstractFieldData):
     Example
     -------
     >>> from tidy3d import ScalarFieldDataArray
-    >>> x = [-1,1]
-    >>> y = [-2,0,2]
-    >>> z = [-3,-1,1,3]
+    >>> x = [-1,1,3]
+    >>> y = [-2,0,2,4]
+    >>> z = [-3,-1,1,3,5]
     >>> f = [2e14, 3e14]
-    >>> coords = dict(x=x, y=y, z=z, f=f)
+    >>> coords = dict(x=x[:-1], y=y[:-1], z=z[:-1], f=f)
+    >>> grid = Grid(boundaries=Coords(x=x, y=y, z=z))
     >>> sclr_fld = ScalarFieldDataArray((1+1j) * np.random.random((2,3,4,2)), coords=coords)
     >>> monitor = PermittivityMonitor(size=(2,4,6), freqs=[2e14, 3e14], name='eps')
-    >>> data = PermittivityData(monitor=monitor, eps_xx=sclr_fld, eps_yy=sclr_fld, eps_zz=sclr_fld)
+    >>> data = PermittivityData(
+    ...     monitor=monitor, eps_xx=sclr_fld, eps_yy=sclr_fld, eps_zz=sclr_fld, grid_expanded=grid
+    ... )
     """
 
     monitor: PermittivityMonitor = pd.Field(

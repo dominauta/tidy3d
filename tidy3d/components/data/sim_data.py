@@ -27,14 +27,12 @@ class SimulationData(Tidy3dBaseModel):
     -------
     >>> import tidy3d as td
     >>> num_modes = 5
-    >>> x = [-1,1]
-    >>> y = [-2,0,2]
-    >>> z = [-3,-1,1,3]
+    >>> x = [-1,1,3]
+    >>> y = [-2,0,2,4]
+    >>> z = [-3,-1,1,3,5]
     >>> f = [2e14, 3e14]
-    >>> t = [0, 1e-12, 2e-12]
-    >>> mode_index = np.arange(num_modes)
-    >>> direction = ["+", "-"]
-    >>> coords = dict(x=x, y=y, z=z, f=f)
+    >>> coords = dict(x=x[:-1], y=y[:-1], z=z[:-1], f=f)
+    >>> grid = td.Grid(boundaries=td.Coords(x=x, y=y, z=z))
     >>> scalar_field = td.ScalarFieldDataArray((1+1j) * np.random.random((2,3,4,2)), coords=coords)
     >>> field_monitor = td.FieldMonitor(
     ...     size=(2,4,6),
@@ -60,7 +58,7 @@ class SimulationData(Tidy3dBaseModel):
     ...         )
     ...     ],
     ... )
-    >>> field_data = td.FieldData(monitor=field_monitor, Ex=scalar_field)
+    >>> field_data = td.FieldData(monitor=field_monitor, Ex=scalar_field, grid_expanded=grid)
     >>> sim_data = td.SimulationData(simulation=sim, data=(field_data,))
     """
 
