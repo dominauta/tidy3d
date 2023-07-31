@@ -49,6 +49,13 @@ KELVIN = "K"
 CMCUBE = "cm^3"
 PERCMCUBE = "1/cm^3"
 
+DENSITY = "kg/m^3"
+THERMAL_CONDUCTIVITY = "W/(m*K)"
+SPECIFIC_HEAT_CAPACITY = "J/(kg*K)"
+HEAT_FLUX = "W/m^2"
+VOLUMETRIC_HEAT_RATE = "W/m^3"
+HEAT_TRANSFER_COEFF = "W/(m^2*K)"
+
 # large number used for comparing infinity
 LARGE_NUMBER = 1e10
 
