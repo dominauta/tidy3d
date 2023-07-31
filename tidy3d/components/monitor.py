@@ -246,11 +246,25 @@ class AbstractFieldMonitor(Monitor, ABC):
     )
 
     colocate: bool = pydantic.Field(
-        True,
+        None,
         title="Colocate fields",
         description="Toggle whether fields should be colocated to grid cell boundaries (i.e. "
         "primal grid nodes). Default is ``True``.",
     )
+
+    # TODO: remove after 2.4
+    @pydantic.validator("colocate", always=True)
+    def warn_set_colocate(cls, val):
+        """If ``colocate`` not provided, set to true, but warn that behavior has changed."""
+        with log as consolidated_logger:
+            if val is None:
+                consolidated_logger.warning(
+                    "Default value for the field monitor 'colocate' setting has changed to "
+                    "'True' in Tidy3D 2.4.0. All field components will be colocated to the grid "
+                    "boundaries. Set to 'False' to get the raw fields on the Yee grid instead."
+                )
+                return True
+        return val
 
 
 class PlanarMonitor(Monitor, ABC):
@@ -330,7 +344,8 @@ class FieldMonitor(AbstractFieldMonitor, FreqMonitor):
     ...     size=(2,2,2),
     ...     fields=['Hx'],
     ...     freqs=[250e12, 300e12],
-    ...     name='steady_state_monitor')
+    ...     name='steady_state_monitor',
+    ...     colocate=True)
     """
 
     def storage_size(self, num_cells: int, tmesh: ArrayFloat1D) -> int:
@@ -351,6 +366,7 @@ class FieldTimeMonitor(AbstractFieldMonitor, TimeMonitor):
     ...     start=1e-13,
     ...     stop=5e-13,
     ...     interval=2,
+    ...     colocate=True,
     ...     name='movie_monitor')
     """
 
@@ -633,7 +649,11 @@ class AbstractFieldProjectionMonitor(SurfaceIntegrationMonitor, FreqMonitor):
         return [
             FieldProjectionSurface(
                 monitor=FieldMonitor(
-                    center=surface.center, size=surface.size, freqs=self.freqs, name=surface.name
+                    center=surface.center,
+                    size=surface.size,
+                    freqs=self.freqs,
+                    name=surface.name,
+                    colocate=True,
                 ),
                 normal_dir=surface.normal_dir,
             )

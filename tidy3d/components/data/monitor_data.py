@@ -692,7 +692,9 @@ class FieldData(FieldDataset, ElectromagneticFieldData):
     >>> f = [2e14, 3e14]
     >>> coords = dict(x=x, y=y, z=z, f=f)
     >>> scalar_field = ScalarFieldDataArray((1+1j) * np.random.random((2,3,4,2)), coords=coords)
-    >>> monitor = FieldMonitor(size=(2,4,6), freqs=[2e14, 3e14], name='field', fields=['Ex', 'Hz'])
+    >>> monitor = FieldMonitor(
+    ...     size=(2,4,6), freqs=[2e14, 3e14], name='field', fields=['Ex', 'Hz'], colocate=True
+    ... )
     >>> data = FieldData(monitor=monitor, Ex=scalar_field, Hz=scalar_field)
     """
 
@@ -763,7 +765,9 @@ class FieldTimeData(FieldTimeDataset, ElectromagneticFieldData):
     >>> t = [0, 1e-12, 2e-12]
     >>> coords = dict(x=x, y=y, z=z, t=t)
     >>> scalar_field = ScalarFieldTimeDataArray(np.random.random((2,3,4,3)), coords=coords)
-    >>> monitor = FieldTimeMonitor(size=(2,4,6), interval=100, name='field', fields=['Ex', 'Hz'])
+    >>> monitor = FieldTimeMonitor(
+    ...     size=(2,4,6), interval=100, name='field', fields=['Ex', 'Hz'], colocate=True
+    ... )
     >>> data = FieldTimeData(monitor=monitor, Ex=scalar_field, Hz=scalar_field)
     """
 

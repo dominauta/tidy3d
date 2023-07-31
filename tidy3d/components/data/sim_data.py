@@ -41,6 +41,7 @@ class SimulationData(Tidy3dBaseModel):
     ...     freqs=[2e14, 3e14],
     ...     name='field',
     ...     fields=['Ex'],
+    ...     colocate=True,
     ... )
     >>> sim = Simulation(
     ...     size=(2, 4, 6),

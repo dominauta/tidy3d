@@ -111,7 +111,6 @@ class Simulation(Box):  # pylint:disable=too-many-public-methods
     ...         )
     ...     ],
     ...     monitors=[
-    ...         FieldMonitor(size=(0, 0, 0), center=(0, 0, 0), freqs=[1.5e14, 2e14], name='point'),
     ...         FluxMonitor(size=(1, 1, 0), center=(0, 0, 0), freqs=[2e14, 2.5e14], name='flux'),
     ...     ],
     ...     symmetry=(0, 0, 0),

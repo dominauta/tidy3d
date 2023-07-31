@@ -4,6 +4,7 @@ import pydantic
 import numpy as np
 import tidy3d as td
 from tidy3d.exceptions import SetupError, ValidationError
+from ..utils import assert_log_level, log_capture
 
 
 def test_stop_start():
@@ -202,8 +203,8 @@ def test_monitor_freqs_empty():
         )
 
 
-def test_monitor_downsampling():
-    # test that the downsampling parameters can be set
+def test_monitor_colocate(log_capture):
+    """test default colocate value, and warning if not set"""
 
     monitor = td.FieldMonitor(
         size=(td.inf, td.inf, td.inf),
@@ -212,6 +213,7 @@ def test_monitor_downsampling():
         interval_space=(1, 2, 3),
     )
     assert monitor.colocate is True
+    assert_log_level(log_capture, "WARNING")
 
     monitor = td.FieldMonitor(
         size=(td.inf, td.inf, td.inf),
