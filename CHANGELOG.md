@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `nyquist_step` also taking the frequency range of frequency-domain monitors into account.
+- Added bound capabilities to `Simulation.plot()` and `Simulation.plot_eps()`
 
 ### Fixed
 
