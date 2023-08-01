@@ -182,7 +182,7 @@ material_refs = dict(
     Burnett2016=ReferenceData(
         journal="John H. Burnett, Simon G. Kaplan, Eric Stover, and Adam Phenis, "
         "Refractive index measurements of Ge, "
-        "Proc. SPIE 9974, Infrared Sensors, Devices, and Applications VI, 99740X "
+        "Proc. SPIE 9974, Infrared Sensors, Devices, and Applications VI, 99740X test"
         "(20 September 2016)",
         doi="https://doi.org/10.1117/12.2237978",
     ),
