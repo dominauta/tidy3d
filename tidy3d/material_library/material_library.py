@@ -692,6 +692,21 @@ GaAs_Skauli2003 = VariantItem(
     "main/GaAs/Skauli.yml",
 )
 
+Ge_Burnett = VariantItem(
+    medium=PoleResidue(
+        eps_inf=1,
+        poles=[
+            ((0.0 - 1j * 4058881010432815.5), (-0.0 + 1j * 3.0425800881554852e+16)),
+            ((0.0 - 1j * 2.6819354919692104e+19), (-0.0 - 1j * 96728532463700.81)),
+            ((0.0 - 1j * 498034745991.71796), (-0.0 - 1j * 469707055680759.06)),
+        ],
+        frequency_range=(37474057250000.0, 124913524166666.67),
+    ),
+    reference=[material_refs["Burnett2016"]],
+    data_url="https://refractiveindex.info/data_csv.php?datafile=database/data-nk/"
+    "main/Ge/Burnett.yml",
+)
+
 Ge_Icenogle1976 = VariantItem(
     medium=PoleResidue(
         eps_inf=1,
@@ -1582,6 +1597,7 @@ material_library = dict(
         name="Germanium",
         variants=dict(
             Icenogle1976=Ge_Icenogle1976,
+            Burnett=Ge_Burnett,
         ),
         default="Icenogle1976",
     ),
